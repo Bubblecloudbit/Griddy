@@ -1,13 +1,13 @@
 // lib/types.ts — GridShift type contract
 // Change only with full-team agreement. Other teammates' code depends on every name here.
 
-export type Hour = number; // 0..47, offset from horizon start (hour 0 = next whole hour)
+export type Hour = number; // 0..47, hour 0 = midnight today (24–47 = tomorrow); clock hour = h % 24
 
 export interface RatePlan {
   name: string;
   offPeak: number; // $/kWh, illustrative
   onPeak: number; // $/kWh, illustrative
-  peakHours: Hour[]; // e.g. [16,17,18,19,20] weekday
+  peakHours: Hour[]; // clock hours 0..23, e.g. [16,17,18,19,20]; on-peak when peakHours.includes(h % 24)
   illustrative: true; // literal — not real AEP pricing
 }
 

@@ -14,7 +14,7 @@
 1. **Customer (Jordan, EV owner):** "When should I charge my car so it's full by 7 AM?" → GridShift recommends a window and shows estimated savings vs. charging at plug-in time.
 2. Jordan adds the dishwasher and dryer, plus **"Away Thu–Sun"** (lower load). Taps **Commit plan** and earns GridPoints.
 3. **Switch to the AEP view:** the community forecast updates. Committed load by hour, baseline vs. planned, per neighborhood.
-4. **The punchline:** toggle **Uncoordinated → Coordinated.** Uncoordinated: everyone starts charging right when off-peak begins, and the transformer line is crossed. Coordinated: loads are staggered and the peak flattens. *The judge changes one input* (e.g., EV adoption %) and watches it update.
+4. *(Deferred to P2 — build only if ahead.)* **The punchline:** toggle **Uncoordinated → Coordinated.** Uncoordinated: everyone starts charging right when off-peak begins, and the transformer line is crossed. Coordinated: loads are staggered and the peak flattens. *The judge changes one input* (e.g., EV adoption %) and watches it update.
 5. **AEP sends a Flex Event** ("reduce load 5–7 PM tomorrow, earn 2× points"). It appears on the customer side.
 6. **Trust panel:** opt-in only, utility sees neighborhood aggregates (minimum 5 homes), all prices and profiles labeled illustrative.
 
@@ -24,7 +24,6 @@
 - **Customer planner:** add flexible tasks (appliance, energy, earliest start, deadline). The optimizer recommends start times. Show cost and savings vs. a "run it now" baseline.
 - **Commit plan:** saves to the shared store with neighborhood ID.
 - **AEP dashboard:** hourly chart of baseline vs. committed/planned load for a neighborhood and the region, with a transformer capacity line.
-- **Coordination toggle:** uncoordinated vs. coordinated scheduling across a synthetic community.
 - **Seeded synthetic community:** about 120 homes in 3 neighborhoods, reproducible (seeded random).
 
 ### P1 — Strong additions (7:30–10:00 PM)
@@ -34,6 +33,7 @@
 - **AI energy coach:** natural-language input ("charge my Tesla by 7 AM," "I'm away this weekend"). It turns into structured tasks or flags and explains *why* a time was chosen. **Must have a rule-based fallback** so the demo never depends on the API.
 
 ### P2 — Only if ahead
+- **Coordination toggle + EV-adoption slider** (`/api/simulate`): uncoordinated vs. coordinated scheduling across the synthetic community. The optimizer still supports λ in P0; only the toggle UI and simulate route are deferred.
 - Neighborhood map, AI-written forecast summary for AEP, simulated "actual vs. planned" adherence, deployment.
 
 ### Explicitly out of scope (say these in the pitch as "Next steps")
@@ -67,8 +67,8 @@ cost(h) = Σ over run hours [ price[h] × powerKW ]  +  λ × Σ over run hours 
 See `lib/types.ts` once scaffolded. Core shapes:
 
 ```ts
-type Hour = number;                // 0..47, hour index from horizon start
-interface RatePlan { name: string; offPeak: number; onPeak: number; peakHours: Hour[]; illustrative: true }
+type Hour = number;                // 0..47, hour 0 = midnight today (24–47 = tomorrow); clock hour = h % 24
+interface RatePlan { name: string; offPeak: number; onPeak: number; peakHours: Hour[]; illustrative: true } // peakHours = clock hours, check h % 24
 interface FlexTask { id: string; label: string; kWh: number; powerKW: number; earliestStart: Hour; deadline: Hour }
 interface ScheduledTask extends FlexTask { start: Hour; cost: number; baselineCost: number }
 interface LoadFlag { id: string; type: "away" | "high_load"; startHour: Hour; endHour: Hour; deltaKW: number }
@@ -85,7 +85,7 @@ interface FlexEvent { id: string; startHour: Hour; endHour: Hour; multiplier: nu
 | POST | `/api/optimize` | `{ tasks, neighborhoodId, coordinated }` → `ScheduledTask[]` (no save) |
 | POST | `/api/plan` | Commit a household's tasks and flags → updates store, returns points |
 | GET | `/api/forecast?scope=n1\|region&coordinated=true` | `Forecast` (aggregates only) |
-| POST | `/api/simulate` | `{ evAdoption, coordinated }` → regenerate community forecast for the toggle |
+| POST | `/api/simulate` | `{ evAdoption, coordinated }` → regenerate community forecast for the toggle **(P2, stub only for now)** |
 | GET / POST | `/api/events` | List or create Flex Events |
 | POST | `/api/coach` | `{ message }` → `{ reply, tasks?, flags? }` (P1) |
 
@@ -95,7 +95,7 @@ interface FlexEvent { id: string; startHour: Hour; endHour: Hour; multiplier: nu
 |---|---|---|
 | **A — Engine & integration** | types, rates, optimizer, synthetic community, store, all API routes. **Owns `package.json` and lockfile.** Merges at integration time. | `lib/` (except `lib/ai/`, `lib/realdata/`), `app/api/` (except `app/api/coach/`) |
 | **B — Customer app** | planner UI, task entry, schedule timeline, savings card, commit flow, flags, points, Flex Event banner, coach chat UI | `app/(customer)/`, `components/customer/` |
-| **C — AEP dashboard** | forecast charts, neighborhood/region switch, coordination toggle and EV slider, capacity line, Flex Event creator, trust panel | `app/utility/`, `components/utility/` |
+| **C — AEP dashboard** | forecast charts, neighborhood/region switch, capacity line, Flex Event creator, trust panel (coordination toggle and EV slider: P2) | `app/utility/`, `components/utility/` |
 | **D — Real data, AI & pitch** | grid data snapshots (PJM, EIA) → JSON, loader functions, AI coach with fallback, demo script and video, submission writeup, judge Q&A prep | `data/`, `scripts/`, `lib/realdata/`, `lib/ai/`, `app/api/coach/` |
 | **Shared** | `components/ui/` (buttons, cards): create early, then avoid editing at the same time | `components/ui/` |
 
@@ -117,7 +117,7 @@ Each person starts every new session by pasting their line. This tells Claude wh
 
 - **A:** "I am Person A (engine & integration) per PLAN.md §8. Read PLAN.md, CLAUDE.md, and .kiro/specs/gridshift/design.md. Build in this order: rate config → synthetic community generator → optimizer → in-memory store → replace mock API routes with real ones. One piece per commit. Only edit my folders."
 - **B:** "I am Person B (customer app) per PLAN.md §8. Read PLAN.md, CLAUDE.md, and .kiro/specs/gridshift/design.md. Build the customer page against lib/mock.ts first: task entry → schedule timeline → savings card → commit button. Call the API routes through one small client file so switching from mocks is a one-line change. Only edit my folders."
-- **C:** "I am Person C (AEP dashboard) per PLAN.md §8. Read PLAN.md, CLAUDE.md, and .kiro/specs/gridshift/design.md. Build /utility against lib/mock.ts first: neighborhood forecast chart with capacity line → neighborhood/region switch → coordination toggle and EV slider → region reference chart → trust panel. Only edit my folders."
+- **C:** "I am Person C (AEP dashboard) per PLAN.md §8. Read PLAN.md, CLAUDE.md, and .kiro/specs/gridshift/design.md. Build /utility against lib/mock.ts first: neighborhood forecast chart with capacity line → neighborhood/region switch → region reference chart → trust panel. (Coordination toggle and EV slider are P2; skip them.) Only edit my folders."
 - **D:** "I am Person D (real data, AI & pitch) per PLAN.md §8. Read PLAN.md, CLAUDE.md, and .kiro/specs/gridshift/design.md. First: a script in scripts/ that converts the CSVs I put in data/raw/ into RegionReference JSON in data/real/, and the loader in lib/realdata/. Then: the AI coach in lib/ai/ and app/api/coach/ with a rule-based fallback. Only edit my folders."
 
 ### Working rhythm (everyone)

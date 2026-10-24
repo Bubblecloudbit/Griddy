@@ -1,6 +1,7 @@
 // app/utility/page.tsx — placeholder AEP dashboard (owner: C)
-// Renders the neighborhood forecast chart against mock data. The coordination
-// toggle, EV slider, region reference chart, and trust panel are C's real build.
+// Renders the neighborhood forecast chart against mock data. The neighborhood/region
+// switch, region reference chart, and trust panel are C's real build.
+// Coordination toggle and EV slider are deferred to P2.
 "use client";
 
 import { Nav } from "@/components/ui/Nav";
@@ -41,9 +42,8 @@ export default function UtilityPage() {
         </div>
 
         <p className="mt-6 text-xs text-slate-400">
-          Placeholder page (owner C). Neighborhood/region switch, coordination
-          toggle, EV slider, region reference chart, and trust panel build on top
-          of this.
+          Placeholder page (owner C). Neighborhood/region switch, region
+          reference chart, and trust panel build on top of this.
         </p>
       </div>
     </main>

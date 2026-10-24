@@ -33,7 +33,7 @@ export const MOCK_TASKS: ScheduledTask[] = [
     kWh: 10,
     powerKW: 7.2,
     earliestStart: 0,
-    deadline: 30, // must finish by 7 AM (hour 7 on a 0-based 48h horizon starting midnight)
+    deadline: 31, // must finish by 7 AM tomorrow (hour 0 = midnight today, so 24 + 7)
     start: 2, // 2 AM
     cost: 0.7, // illustrative $
     baselineCost: 2.2,

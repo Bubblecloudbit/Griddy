@@ -2,19 +2,26 @@
 
 > Interfaces are the contract. Change only with full-team agreement.
 
+## 0. Time convention (team decision)
+
+- The horizon is 48 hourly slots. **Hour 0 = midnight today.** Hours 0–23 are today, 24–47 are tomorrow.
+- Clock hour of any slot = `h % 24`. Display it with `h % 24` (plus "tomorrow" when `h >= 24`).
+- `RatePlan.peakHours` lists **clock hours** (0–23). An hour is on-peak when `peakHours.includes(h % 24)`, so the peak window applies on both days.
+- `deadline` is the hour the task must be **finished by** (exclusive end). "Full by 7 AM tomorrow" → `deadline: 31`.
+
 ---
 
 ## 1. TypeScript Interfaces (`lib/types.ts`)
 
 ```ts
 // Primitive alias
-type Hour = number; // 0..47, offset from horizon start (hour 0 = now-rounded-to-next-hour)
+type Hour = number; // 0..47, hour 0 = midnight today (0–23 today, 24–47 tomorrow); clock hour = h % 24
 
 interface RatePlan {
   name: string;
   offPeak: number;        // $/kWh, illustrative
   onPeak: number;         // $/kWh, illustrative
-  peakHours: Hour[];      // e.g. [16,17,18,19,20] weekday
+  peakHours: Hour[];      // clock hours 0..23, e.g. [16,17,18,19,20]; applies to both days (check h % 24)
   illustrative: true;     // literal — forces every consumer to acknowledge this is not real AEP pricing
 }
 
@@ -103,7 +110,7 @@ function optimize(tasks, neighborhoodLoad, ratePlan, lambda):
     
     for h in [task.earliestStart .. task.deadline - durationHours]:
       energyCost = sum over [h .. h+durationHours-1]:
-        ratePlan.price(hour) * task.powerKW
+        ratePlan.price(hour) * task.powerKW   // price(hour): onPeak if peakHours.includes(hour % 24), else offPeak
       
       congestion = lambda * sum over [h .. h+durationHours-1]:
         (sharedLoad[h] / neighborhoodCapacity)^2
@@ -148,7 +155,7 @@ const DEFAULT_RATE: RatePlan = {
   name: "Illustrative TOU",
   offPeak: 0.07,    // $/kWh
   onPeak:  0.22,    // $/kWh
-  peakHours: [16, 17, 18, 19, 20],  // configurable weekday window
+  peakHours: [16, 17, 18, 19, 20],  // clock hours; on-peak when peakHours.includes(h % 24)
   illustrative: true,
 };
 ```
@@ -171,7 +178,7 @@ Response: `{ points: number }`
 Query: `scope=<neighborhoodId|"region">`, `coordinated=<true|false>`
 Response: `Forecast`
 
-### POST `/api/simulate`
+### POST `/api/simulate` *(P2 — deferred, stub only)*
 Request: `{ evAdoption: number, coordinated: boolean }`
 Response: `Forecast` (region-level, regenerated community)
 

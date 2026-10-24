@@ -46,7 +46,9 @@ The utility view includes a region-level chart showing real public grid data (PJ
 
 ---
 
-## R5 Coordination Toggle
+## R5 Coordination Toggle — DEFERRED (P2)
+
+> Team decision: not part of P0. Build the main features first; only do this if ahead. `/api/simulate` stays a stub until then.
 
 The utility view has a toggle between **Uncoordinated** (λ = 0) and **Coordinated** (λ > 0) scheduling and an EV-adoption % slider.
 
