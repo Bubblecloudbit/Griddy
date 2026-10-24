@@ -185,13 +185,18 @@ const DEFAULT_RATE: RatePlan = {
 
 All routes live in `app/api/`. Request and response shapes:
 
+**Errors (all routes):** any failure returns `{ error: string }` with a 4xx status (400 bad input or no feasible window, 403 group under 5 homes, 404 unknown id). The message is written for the user, so the UI can show it as-is. Check `res.ok` before using the body.
+
+**State:** the store lives in server memory, seeded with `generateCommunity()` (seed 42). The demo household is `h-jordan` in `n1`, starting with no tasks and 150 points. Restarting `npm run dev` resets everything.
+
 ### POST `/api/optimize`
 Request: `{ tasks: FlexTask[], neighborhoodId: string, coordinated: boolean }`
-Response: `ScheduledTask[]`
+Response: `ScheduledTask[]`, same order as the request. `coordinated` defaults to `true`. Schedules around the neighborhood's current planned load.
 
 ### POST `/api/plan`
+`tasks` may be `FlexTask[]` or the `ScheduledTask[]` from `/api/optimize` (extra fields are ignored). Replaces the household's previous plan.
 Request: `{ householdId: string, tasks: FlexTask[], flags: LoadFlag[] }`
-Response: `{ points: number }`
+Response: `{ points: number }` (the household's new total after +10)
 
 ### GET `/api/forecast`
 Query: `scope=<neighborhoodId|"region">`, `coordinated=<true|false>`
@@ -202,6 +207,7 @@ Request: `{ evAdoption: number, coordinated: boolean }`
 Response: `Forecast` (region-level, regenerated community)
 
 ### GET `/api/events`
+Starts empty; the utility view creates events with POST.
 Response: `FlexEvent[]`
 
 ### POST `/api/events`
