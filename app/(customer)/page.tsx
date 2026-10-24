@@ -3,22 +3,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { FlexTask, RatePlan, ScheduledTask } from "@/lib/types";
+import type { FlexTask, RatePlan, ScheduledTask, WeeklyRoutine } from "@/lib/types";
 import { Card, Nav } from "@/components/ui";
-import { MOCK_HOUSEHOLD } from "@/lib/mock";
+import { MOCK_HOUSEHOLD, MOCK_ROUTINE } from "@/lib/mock";
 import { optimize, commitPlan, getRates } from "@/components/customer/client";
 import { AppShell, type Tab } from "@/components/customer/AppShell";
 import { DayRibbon } from "@/components/customer/DayRibbon";
 import { BestTime, PlanStats } from "@/components/customer/TodaySummary";
-import { TaskForm } from "@/components/customer/TaskForm";
-import { TaskList } from "@/components/customer/TaskList";
-import { ScheduleTimeline } from "@/components/customer/ScheduleTimeline";
-import { SavingsCard } from "@/components/customer/SavingsCard";
-
-// Demo story (PLAN.md §3): Jordan plugs in Mon 4 PM (h40) and needs the car full by Tue 7 AM (h55).
-const DEMO_TASKS: FlexTask[] = [
-  { id: "t-ev", label: "EV charging", appliance: "ev", kWh: 10, powerKW: 7.2, earliestStart: 40, deadline: 55 },
-];
+import { PlanTab } from "@/components/customer/PlanTab";
 
 function Placeholder({ title, text }: { title: string; text: string }) {
   return <Card title={title} explainer={text} />;
@@ -28,7 +20,9 @@ export default function CustomerPage() {
   const [tab, setTab] = useState<Tab>("today");
   const [rate, setRate] = useState<RatePlan | null>(null);
   const [rateError, setRateError] = useState<string | null>(null);
-  const [tasks, setTasks] = useState<FlexTask[]>(DEMO_TASKS);
+  // Demo story (PLAN.md §3): early shift, car plugged in at 4 PM. Week tab (B6) edits this.
+  const [routine] = useState<WeeklyRoutine>(MOCK_ROUTINE);
+  const [tasks, setTasks] = useState<FlexTask[]>([]);
   const [schedule, setSchedule] = useState<ScheduledTask[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -83,7 +77,7 @@ export default function CustomerPage() {
           (rate ? (
             <>
               <BestTime rate={rate} />
-              <DayRibbon rate={rate} />
+              <DayRibbon rate={rate} schedule={schedule ?? []} />
               <PlanStats schedule={schedule ?? []} />
             </>
           ) : rateError ? (
@@ -92,38 +86,21 @@ export default function CustomerPage() {
             <Card title="Peak and off-peak hours" explainer="Loading rates…" />
           ))}
 
-        {tab === "plan" && (
-          <>
-            <TaskForm onAdd={(t) => changeTasks([...tasks, t])} />
-            <TaskList tasks={tasks} onRemove={(id) => changeTasks(tasks.filter((t) => t.id !== id))} />
-            <button
-              onClick={runOptimize}
-              disabled={busy || tasks.length === 0}
-              className="rounded-control bg-ink px-4 py-2 text-sm font-medium text-white disabled:opacity-40"
-            >
-              {busy && !schedule ? "Finding times…" : "Find best times"}
-            </button>
-            {error && (
-              <p role="alert" className="text-sm text-danger">
-                {error}
-              </p>
-            )}
-            {schedule && (
-              <>
-                <ScheduleTimeline schedule={schedule} />
-                <SavingsCard schedule={schedule} />
-                <button
-                  onClick={runCommit}
-                  disabled={busy || committedMsg !== null}
-                  className="rounded-control bg-ink px-4 py-2 text-sm font-medium text-white disabled:opacity-40"
-                >
-                  {committedMsg ? "Committed" : "Commit plan"}
-                </button>
-                {committedMsg && <p className="text-sm text-plan">{committedMsg}</p>}
-              </>
-            )}
-          </>
+        {tab === "plan" && rate && (
+          <PlanTab
+            rate={rate}
+            tasks={tasks}
+            schedule={schedule}
+            plugInHour={routine.plugInHour}
+            busy={busy}
+            error={error}
+            committed={committedMsg !== null}
+            onTasksChange={changeTasks}
+            onOptimize={runOptimize}
+            onCommit={runCommit}
+          />
         )}
+        {tab === "plan" && committedMsg && <p className="text-body text-plan">{committedMsg}</p>}
 
         {tab === "week" && (
           <Placeholder title="Your week" text="Routine and trips will show here." />

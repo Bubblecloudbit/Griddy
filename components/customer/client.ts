@@ -80,6 +80,12 @@ function peakKWh(task: FlexTask, start: number): number {
   return kWh;
 }
 
+function mockReason(task: FlexTask, start: number): string {
+  if (peakKWh(task, start) > 0) return "Peak hours can't be avoided before your ready-by time";
+  if (peakKWh(task, task.earliestStart) > 0) return "Starts after the peak ends, still ready on time";
+  return "Already off-peak at plug-in, so it starts right away";
+}
+
 function mockOptimize(tasks: FlexTask[]): ScheduledTask[] {
   return tasks.map((task) => {
     const lastStart = task.deadline - durationHours(task);
@@ -96,6 +102,7 @@ function mockOptimize(tasks: FlexTask[]): ScheduledTask[] {
       cost: energyCost(task, best),
       baselineCost: energyCost(task, task.earliestStart),
       peakKWhAvoided: peakKWh(task, task.earliestStart) - peakKWh(task, best),
+      reason: mockReason(task, best),
     };
   });
 }
