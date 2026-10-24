@@ -10,7 +10,8 @@ export const DEMO_HOUSEHOLD_ID = "h-jordan"; // the customer-app demo home, in n
 
 const TRANSFORMER_CAPACITY_KW = 200; // ~40 homes × 5 kW peak
 
-const NEIGHBORHOODS = [
+// Exported for UI pickers (browser-safe: no store access). Use the id as the forecast scope.
+export const NEIGHBORHOODS = [
   { id: "n1", name: "Oak Hill", homes: 40 },
   { id: "n2", name: "Riverside", homes: 42 },
   { id: "n3", name: "Eastside", homes: 38 },

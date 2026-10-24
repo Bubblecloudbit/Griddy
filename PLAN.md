@@ -162,3 +162,68 @@ Each person starts every new session by pasting their line. This tells Claude wh
 - [ ] Anthropic API key or AWS Bedrock for the coach? Who has it?
 - [ ] PJM API approval: keep waiting in the background, but plan on website CSV downloads.
 - [ ] Final name.
+- [ ] **(P1) How does a customer join a Flex Event?** No route exists yet. A's proposal: add optional `eventIds: string[]` to `POST /api/plan`; each joined event multiplies that commit's points by its `multiplier`. Needs B + C + A to agree before 7:30 PM.
+
+## 13. Status & integration guide (keep this updated)
+
+> Read this before switching your part from `lib/mock.ts` to the real API. Owners: update your own row when you push something others depend on.
+
+### Status
+
+| Person | Done | Next |
+|---|---|---|
+| **A** | Rates, community (120 homes, seed 42), optimizer, store, forecast, real `/api/optimize`, `/api/plan`, `/api/forecast`, `/api/events`. `/api/simulate` is a stub (P2). | Integration at 6:30. Then P1: Flex Event bonus points (see §12). |
+| **B** | — | Planner against mocks → switch to the real API (below). |
+| **C** | — | Dashboard against mocks → switch to the real API (below). |
+| **D** | — | Region JSON + loader, then coach. |
+
+### Rules that apply to every caller
+- **Times:** hour 0 = midnight today, 24–47 = tomorrow. Show `h % 24` and add "tomorrow" when `h >= 24`. `deadline` = finished-by hour. "Full by 7 AM tomorrow" → `31`.
+- **Errors:** every route can return `{ error: string }` with a 4xx status. Check `res.ok`. The message is written for users; show it as-is.
+- **State is in server memory.** Restarting `npm run dev` resets plans, points, and events. Don't restart right before the demo.
+- **Demo household:** `h-jordan` in `n1`. Starts with no tasks and 150 points.
+- **Units:** our forecasts are **kW** (homes). PJM/EIA reference data is **MW** (whole zone). Never put both on one axis.
+- Full request/response shapes: `.kiro/specs/gridshift/design.md` §5.
+
+### B — customer app
+Put all calls in one file in your folder (e.g. `components/customer/api.ts`) so the switch from mocks is one place:
+
+```ts
+async function post<T>(url: string, body: unknown): Promise<T> {
+  const res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error); // show this message in the UI
+  return data;
+}
+// Recommend times (no save). Same order as `tasks`.
+export const optimizeTasks = (tasks: FlexTask[]) => post<ScheduledTask[]>("/api/optimize", { tasks, neighborhoodId: "n1", coordinated: true });
+// Commit. Pass the ScheduledTask[] straight back in; returns the new points total.
+export const commitPlan = (tasks: FlexTask[], flags: LoadFlag[]) => post<{ points: number }>("/api/plan", { householdId: "h-jordan", tasks, flags });
+// Flex Event banner: fetch on load and every ~5 s (C creates them from the utility view).
+export const getEvents = () => fetch("/api/events").then((r) => r.json() as Promise<FlexEvent[]>);
+```
+
+- Task ids only need to be unique within the request (e.g. `crypto.randomUUID()`).
+- Savings = `baselineCost - cost` ("run it now" means starting at `earliestStart`). Label it **illustrative**.
+- Away flag: `{ type: "away", deltaKW: -0.5 }`; high-load flag: positive `deltaKW` (e.g. `+2`).
+
+### C — AEP dashboard
+- Neighborhood picker: `import { NEIGHBORHOODS } from "@/lib/community"` → `[{ id: "n1", name: "Oak Hill", homes: 40 }, …]`. Safe in a `"use client"` page.
+- Forecast: ``fetch(`/api/forecast?scope=${id}`)`` where `id` is `n1`/`n2`/`n3`/`region`. Re-fetch every ~5 s, or after a commit, so Jordan's plan shows up live.
+- `baselineKW` = every task runs at plug-in time. `plannedKW` = committed plans, scheduled and with flags. Label both **simulated**.
+- A 403 response means fewer than 5 homes: show "hidden for privacy" instead of the chart.
+- Region reference: `import { getRegionReference } from "@/lib/realdata"` (synchronous; mock until D swaps in the real JSON). Show `source` and `date` on screen.
+- Flex Event creator: `POST /api/events` with `{ startHour, endHour, multiplier, message }`. Use tomorrow's hours (e.g. 5–7 PM tomorrow = `41`–`43`).
+
+### D — real data & coach
+- Snapshot JSON must match `RegionReference` exactly; swap it into `lib/realdata/index.ts` with a static import (design.md §6).
+- The coach's `tasks` must pass the same checks as `/api/optimize`: string `id` and `label`, positive `kWh` and `powerKW`, whole hours 0–48 with hour 0 = midnight today. Then B can send them straight to `/api/optimize`.
+- Appliance defaults the engine uses: EV 7.2 kW / ~10 kWh, dryer 3 kW / 1.5 kWh, dishwasher 1.5 kW / 1.2 kWh, water heater 4.5 kW / 2 kWh.
+
+### Integration checklist (6:30 PM, A runs it)
+1. Everyone pushes; A pulls and runs `npm run dev`.
+2. Customer: add EV (6 PM → 7 AM tomorrow) → Optimize → recommended start appears with illustrative savings → Commit → points go from 150 to 160.
+3. AEP view: n1 planned curve changes after the commit. All three neighborhoods and the region load.
+4. Create a Flex Event on the AEP view → banner appears on the customer page.
+5. Region chart shows the source and date.
+6. No console errors on either page → `git tag demo-v1 && git push --tags`.

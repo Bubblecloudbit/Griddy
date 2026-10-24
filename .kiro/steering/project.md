@@ -3,7 +3,7 @@
 Copy this file to `AGENTS.md` too so non-Claude agents read the same rules.
 
 ## Context
-24-hour hackathon prototype. Read `PLAN.md` first. It defines scope, interfaces, and folder ownership. The detailed spec (written with Kiro) is in `.kiro/specs/gridshift/`: `requirements.md`, `design.md`, `tasks.md`. Follow `design.md` for interfaces and algorithms. If it conflicts with PLAN.md, stop and ask the human. Optimize for a demo that works reliably, not for production.
+24-hour hackathon prototype. Read `PLAN.md` first. It defines scope, interfaces, and folder ownership. The detailed spec (written with Kiro) is in `.kiro/specs/gridshift/`: `requirements.md`, `design.md`, `tasks.md`. Follow `design.md` for interfaces and algorithms. If it conflicts with PLAN.md, stop and ask the human. Optimize for a demo that works reliably, not for production. **Before calling another person's code or the API, read PLAN.md §13 (status & integration guide).**
 
 ## Stack
 Next.js (App Router), TypeScript, Tailwind, Recharts. No other libraries without asking the human (only Person A installs packages).
