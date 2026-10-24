@@ -28,10 +28,15 @@ export const LAST_HOUR = HORIZON_HOURS - 1;
 // Every hour in the horizon, for <select> options.
 export const ALL_HOURS: number[] = Array.from({ length: HORIZON_HOURS }, (_, i) => i);
 
-// "Mon 4–6 PM" (or "Mon 11 PM–1 AM" across noon/midnight). endHour is exclusive.
-export function rangeLabel(start: number, end: number): string {
+// "4–6 PM" (or "11 PM–1 AM" across noon/midnight). endHour is exclusive. DESIGN.md §8.
+export function clockRange(start: number, end: number): string {
   const s = clockLabel(start);
   const e = clockLabel(end);
   const sameHalf = s.slice(-2) === e.slice(-2);
-  return `${dayLabel(start)} ${sameHalf ? s.slice(0, -3) : s}–${e}`;
+  return `${sameHalf ? s.slice(0, -3) : s}–${e}`;
+}
+
+// "Mon 4–6 PM"
+export function rangeLabel(start: number, end: number): string {
+  return `${dayLabel(start)} ${clockRange(start, end)}`;
 }

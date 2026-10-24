@@ -13,7 +13,7 @@ import { usePolling } from "@/components/utility/usePolling";
 import { HeatmapGrid, type PeakOutline } from "@/components/utility/HeatmapGrid";
 import { HeatmapLegend } from "@/components/utility/HeatmapLegend";
 import { biggestShift, tripTakeaway } from "@/components/utility/heatmapMath";
-import { clockLabel } from "@/components/utility/hours";
+import { clockRange } from "@/components/utility/hours";
 
 type View = Heatmap["view"];
 type Metric = Heatmap["metric"];
@@ -49,7 +49,7 @@ export default function HeatmapsPage() {
   const takeaway =
     loadMap && changeMap
       ? view === "area_hour"
-        ? biggestShift(loadMap.values, changeMap.values, loadMap.rows, clockLabel)
+        ? biggestShift(loadMap.values, changeMap.values, loadMap.rows, clockRange)
         : tripTakeaway(loadMap.values, changeMap.values, TRIP_DAYS[0], TRIP_DAYS[1], "Thu–Sat")
       : null;
 

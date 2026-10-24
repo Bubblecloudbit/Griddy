@@ -75,7 +75,7 @@ export function blockChange(load: Grid, change: Grid, rows: number[], cols: numb
 const WINDOW = 2; // hours: "4–6 PM"
 
 // "Biggest shift: Riverside, 4–6 PM, −31% vs. baseline" — the 2-hour block with the biggest drop.
-export function biggestShift(load: Grid, change: Grid, rowNames: string[], clock: (c: number) => string) {
+export function biggestShift(load: Grid, change: Grid, rowNames: string[], range: (start: number, end: number) => string) {
   let best: { row: number; col: number; pct: number } | null = null;
   for (let r = 0; r < rowNames.length; r++) {
     for (let c = 0; c + WINDOW <= 24; c++) {
@@ -84,7 +84,7 @@ export function biggestShift(load: Grid, change: Grid, rowNames: string[], clock
     }
   }
   if (!best || best.pct > -1) return null;
-  return `Biggest shift: ${rowNames[best.row]}, ${clock(best.col)}–${clock(best.col + WINDOW)}, ${formatPct(best.pct)} vs. baseline`;
+  return `Biggest shift: ${rowNames[best.row]}, ${range(best.col, best.col + WINDOW)}, ${formatPct(best.pct)} vs. baseline`;
 }
 
 // "Thu–Sat: −9% residential load (planned trips)" for rows 4–6 of the week view.

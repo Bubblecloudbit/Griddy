@@ -37,7 +37,8 @@ export function NextEventCard() {
           </div>
           <p className="text-body text-ink-muted">{event.message}</p>
           <p className="text-caption text-ink-muted">
-            <span className="font-mono text-ink">{formatInt(event.optedIn ?? 0)}</span> homes opted in
+            <span className="font-mono text-ink">{formatInt(event.optedIn ?? 0)}</span>{" "}
+            {event.optedIn === 1 ? "home" : "homes"} opted in
           </p>
         </div>
       )}
