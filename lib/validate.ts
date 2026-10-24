@@ -1,7 +1,7 @@
 // lib/validate.ts — request body checks for API routes (owner: A)
 // Each parser returns the clean value, or throws BadRequest with a message for the UI.
 import { NextResponse } from "next/server";
-import type { Appliance, FlexTask, LoadFlag } from "@/lib/types";
+import type { Appliance, FlexTask, LoadFlag, Trip, WeeklyRoutine } from "@/lib/types";
 import { HORIZON_HOURS } from "@/lib/rates";
 
 const APPLIANCES: Appliance[] = ["ev", "dryer", "dishwasher", "water_heater", "other"];
@@ -44,6 +44,48 @@ export function parseFlags(raw: unknown): LoadFlag[] {
     if (!isNum(f.deltaKW)) throw new BadRequest(`flag ${i}: deltaKW must be a number`);
     return { id: f.id, type: f.type, startHour: f.startHour, endHour: f.endHour, deltaKW: f.deltaKW };
   });
+}
+
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+
+// Optional on /api/plan: undefined means "keep what the household already has".
+export function parseTrips(raw: unknown): Trip[] | undefined {
+  if (raw === undefined) return undefined;
+  if (!Array.isArray(raw)) throw new BadRequest("trips must be an array");
+  return raw.map((t, i) => {
+    if (typeof t?.id !== "string" || typeof t?.label !== "string") throw new BadRequest(`trip ${i}: id and label are required`);
+    if (!ISO_DATE.test(t.startDate) || !ISO_DATE.test(t.endDate) || t.endDate < t.startDate) {
+      throw new BadRequest(`trip "${t.label}": needs startDate ≤ endDate as YYYY-MM-DD`);
+    }
+    return { id: t.id, label: t.label, startDate: t.startDate, endDate: t.endDate };
+  });
+}
+
+const PRESETS: WeeklyRoutine["preset"][] = ["early_shift", "commuter", "home_all_day", "night_shift", "custom"];
+
+function isClock(x: unknown, max: number): x is number {
+  return isNum(x) && Number.isInteger(x) && x >= 0 && x <= max;
+}
+
+export function parseRoutine(raw: any): WeeklyRoutine | undefined {
+  if (raw === undefined) return undefined;
+  if (!PRESETS.includes(raw?.preset)) throw new BadRequest(`routine.preset must be one of ${PRESETS.join(", ")}`);
+  if (!isClock(raw.plugInHour, 23)) throw new BadRequest("routine.plugInHour must be a clock hour 0–23");
+  if (!Array.isArray(raw.awayBlocks)) throw new BadRequest("routine.awayBlocks must be an array");
+  const awayBlocks = raw.awayBlocks.map((b: any, i: number) => {
+    const days = Array.isArray(b?.days) ? b.days : [];
+    if (!days.every((d: unknown) => isClock(d, 6)) || !isClock(b.start, 23) || !isClock(b.end, 24) || b.end <= b.start) {
+      throw new BadRequest(`routine.awayBlocks[${i}]: needs days 0–6 and clock hours start < end`);
+    }
+    return { days, start: b.start, end: b.end };
+  });
+  return { preset: raw.preset, awayBlocks, plugInHour: raw.plugInHour };
+}
+
+export function parseEventIds(raw: unknown): string[] {
+  if (raw === undefined) return [];
+  if (!Array.isArray(raw) || !raw.every((id) => typeof id === "string")) throw new BadRequest("eventIds must be an array of strings");
+  return raw;
 }
 
 export function parseEvent(raw: any) {

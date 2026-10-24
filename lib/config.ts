@@ -31,6 +31,13 @@ export function hourLabel(h: Hour): string {
   return `${c % 12 === 0 ? 12 : c % 12}${suffix}`;
 }
 
+// "2026-10-29" for a day index from DEMO_DAY_0. Compare with Trip dates as plain strings.
+export function isoDate(day: number): string {
+  const date = new Date(`${DEMO_DAY_0}T12:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + day);
+  return date.toISOString().slice(0, 10);
+}
+
 // "Mon Oct 26" for a day index from DEMO_DAY_0.
 export function dayLabel(day: number): string {
   const date = new Date(`${DEMO_DAY_0}T12:00:00`);

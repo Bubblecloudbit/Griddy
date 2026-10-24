@@ -1,18 +1,12 @@
 // lib/summary.ts — KPI strip numbers for the AEP overview (owner: A)
 // Region-wide aggregates only (480 homes), so nothing here identifies a household.
 import type { FlexEvent, Household, Summary, Trip } from "@/lib/types";
-import { DEMO_DAY_0, OUTLOOK_DAYS } from "@/lib/config";
+import { OUTLOOK_DAYS, isoDate } from "@/lib/config";
 import { regionForecast } from "@/lib/forecast";
 import { listEvents, listHouseholds } from "@/lib/store";
 
-function isoDay(day: number): string {
-  const d = new Date(`${DEMO_DAY_0}T12:00:00`);
-  d.setDate(d.getDate() + day);
-  return d.toISOString().slice(0, 10);
-}
-
-const WEEK_START = isoDay(0); // "2026-10-25"
-const WEEK_END = isoDay(OUTLOOK_DAYS - 1); // "2026-10-31"
+const WEEK_START = isoDate(0); // "2026-10-25"
+const WEEK_END = isoDate(OUTLOOK_DAYS - 1); // "2026-10-31"
 
 // ISO dates compare correctly as strings.
 function tripInWeek(t: Trip): boolean {

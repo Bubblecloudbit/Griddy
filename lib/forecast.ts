@@ -3,7 +3,7 @@
 // plannedKW  = committed intent: enrolled homes' tasks at optimized starts, everyone else's
 //              at plug-in, plus away/high-load flags.
 // Only aggregates leave this file; the utility view never sees a single home.
-import type { Forecast, Household, LoadFlag, Neighborhood } from "@/lib/types";
+import type { FlexTask, Forecast, Hour, Household, LoadFlag, Neighborhood } from "@/lib/types";
 import { DEFAULT_RATE, HORIZON_HOURS, isPeak } from "@/lib/rates";
 import { PLAN_DAY } from "@/lib/config";
 import { addTaskLoad, COORDINATED_LAMBDA, optimize } from "@/lib/optimizer";
@@ -45,17 +45,29 @@ function applyFlags(load: number[], flags: LoadFlag[]): number[] {
   return out;
 }
 
-export function neighborhoodForecast(n: Neighborhood, coordinated: boolean): Forecast {
+export interface AreaPlan {
+  homes: Household[];
+  baseline: number[]; // 72 h, kW
+  planned: number[]; // 72 h, kW
+  startOf: Map<FlexTask, Hour>; // where each task runs in the plan (enrolled: optimized; others: plug-in)
+}
+
+// Runs the area's schedule once. Both the 72 h forecast and the 7-day outlook build on it.
+export function planArea(n: Neighborhood, coordinated: boolean): AreaPlan {
   const homes: Household[] = householdsIn(n.id);
   const baseline = zeros();
   const fixedPlanned = zeros(); // load GridShift can't move: non-flexible load (with flags) + non-enrolled tasks
+  const startOf = new Map<FlexTask, Hour>();
 
   for (const home of homes) {
     addInto(baseline, home.baselineKW);
     addInto(fixedPlanned, applyFlags(home.baselineKW, home.flags));
     for (const task of home.tasks) {
       addTaskLoad(baseline, task, task.earliestStart);
-      if (!home.enrolled) addTaskLoad(fixedPlanned, task, task.earliestStart); // not in GridShift: runs at plug-in
+      if (!home.enrolled) {
+        addTaskLoad(fixedPlanned, task, task.earliestStart); // not in GridShift: runs at plug-in
+        startOf.set(task, task.earliestStart);
+      }
     }
   }
 
@@ -64,8 +76,16 @@ export function neighborhoodForecast(n: Neighborhood, coordinated: boolean): For
   const lambda = coordinated ? COORDINATED_LAMBDA : 0;
   const scheduled = optimize(enrolledTasks, fixedPlanned, n.transformerCapacityKW, DEFAULT_RATE, lambda);
   const planned = [...fixedPlanned];
-  for (const t of scheduled) addTaskLoad(planned, t, t.start);
+  scheduled.forEach((t, i) => {
+    addTaskLoad(planned, t, t.start);
+    startOf.set(enrolledTasks[i], t.start); // optimize keeps input order
+  });
 
+  return { homes, baseline, planned, startOf };
+}
+
+export function neighborhoodForecast(n: Neighborhood, coordinated: boolean): Forecast {
+  const { homes, baseline, planned } = planArea(n, coordinated);
   return withPeakTotals({
     neighborhoodId: n.id,
     baselineKW: round2(baseline),
