@@ -183,7 +183,7 @@ interface RegionReference { label: string; source: string; date: string; demandM
 ## 13. Status (owners update their row when they push)
 | Person | Done | Next |
 |---|---|---|
-| **A** | v1: rates, community (seed 42), optimizer, store, forecast, `/api/optimize`, `/api/plan`, `/api/forecast`, `/api/events`. | v2 changes: BUILD.md §A. |
+| **A** | **A1 v2 contract:** v2 types, `lib/config.ts` (demo clock, `dayLabel`, `hourLabel`, `isWeekend`), 72 h horizon, 12 areas × 40 homes live in the API, v2 mocks (`MOCK_SUMMARY`, `mockHeatmap`, `MOCK_TRIP`, `MOCK_ROUTINE`, …), stub `/api/rates` `/api/summary` `/api/heatmap`, `/api/simulate` deleted, `lucide-react` 1.54.0. | A2 rate plan → A3–A6 |
 | **B** | — | BUILD.md §B |
 | **C** | — | BUILD.md §C (tokens first) |
 | **D** | — | BUILD.md §D (DATA.md pulls first) |

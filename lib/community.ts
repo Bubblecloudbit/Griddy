@@ -10,12 +10,14 @@ export const DEMO_HOUSEHOLD_ID = "h-jordan"; // the customer-app demo home, in n
 
 const TRANSFORMER_CAPACITY_KW = 200; // ~40 homes × 5 kW peak
 
-// Exported for UI pickers (browser-safe: no store access). Use the id as the forecast scope.
-export const NEIGHBORHOODS = [
-  { id: "n1", name: "Oak Hill", homes: 40 },
-  { id: "n2", name: "Riverside", homes: 42 },
-  { id: "n3", name: "Eastside", homes: 38 },
+// 12 synthetic service areas × 40 homes = 480. Shown in the UI as "service areas".
+const AREA_NAMES = [
+  "Oak Hill", "Riverside", "Eastside", "Maple Park", "Cedar Ridge", "Lakeview",
+  "Birchwood", "Stonebrook", "Willow Creek", "Elm Court", "Pine Terrace", "Meadow Lane",
 ];
+
+// Exported for UI pickers (browser-safe: no store access). Use the id as the forecast scope.
+export const NEIGHBORHOODS = AREA_NAMES.map((name, i) => ({ id: `n${i + 1}`, name, homes: 40 }));
 
 // Illustrative hourly shape of an average home's non-flexible load (kW), ~28 kWh/day:
 // overnight trough, morning bump 7–9 AM, evening bump 6–9 PM.

@@ -1,8 +1,10 @@
 // lib/validate.ts — request body checks for API routes (owner: A)
 // Each parser returns the clean value, or throws BadRequest with a message for the UI.
 import { NextResponse } from "next/server";
-import type { FlexTask, LoadFlag } from "@/lib/types";
+import type { Appliance, FlexTask, LoadFlag } from "@/lib/types";
 import { HORIZON_HOURS } from "@/lib/rates";
+
+const APPLIANCES: Appliance[] = ["ev", "dryer", "dishwasher", "water_heater", "other"];
 
 export class BadRequest extends Error {}
 
@@ -26,7 +28,10 @@ export function parseTasks(raw: unknown): FlexTask[] {
     if (typeof t?.id !== "string" || typeof t?.label !== "string") throw new BadRequest(`task ${i}: id and label are required`);
     if (!isNum(t.kWh) || t.kWh <= 0 || !isNum(t.powerKW) || t.powerKW <= 0) throw new BadRequest(`"${t.label}": kWh and powerKW must be positive`);
     if (!isHour(t.earliestStart) || !isHour(t.deadline)) throw new BadRequest(`"${t.label}": earliestStart and deadline must be whole hours 0–${HORIZON_HOURS}`);
-    return { id: t.id, label: t.label, kWh: t.kWh, powerKW: t.powerKW, earliestStart: t.earliestStart, deadline: t.deadline };
+    if (t.appliance !== undefined && !APPLIANCES.includes(t.appliance)) throw new BadRequest(`"${t.label}": appliance must be one of ${APPLIANCES.join(", ")}`);
+    const task: FlexTask = { id: t.id, label: t.label, kWh: t.kWh, powerKW: t.powerKW, earliestStart: t.earliestStart, deadline: t.deadline };
+    if (t.appliance !== undefined) task.appliance = t.appliance;
+    return task;
   });
 }
 

@@ -2,7 +2,8 @@
 // Not real AEP pricing. See design.md §0 (time convention) and §4.
 import type { Hour, RatePlan } from "@/lib/types";
 
-export const HORIZON_HOURS = 48; // hour 0 = midnight today, 24–47 = tomorrow
+// 72 h from DEMO_DAY_0 (Sun–Tue). Defined in lib/config.ts; re-exported because older code imports it from here.
+export { HORIZON_HOURS } from "@/lib/config";
 
 export const DEFAULT_RATE: RatePlan = {
   name: "Illustrative TOU",
