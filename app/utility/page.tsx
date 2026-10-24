@@ -10,6 +10,7 @@ import { ZoneContextChart } from "@/components/utility/ZoneContextChart";
 import { NextEventCard } from "@/components/utility/NextEventCard";
 import { FlexEventPanel } from "@/components/utility/FlexEventPanel";
 import { TrustPanel } from "@/components/utility/TrustPanel";
+import { ResetDemoLink } from "@/components/utility/ResetDemoLink";
 import { fetchEvents, type Scope } from "@/components/utility/api";
 import type { FlexEvent } from "@/lib/types";
 
@@ -40,6 +41,7 @@ export default function OverviewPage() {
       </div>
       <FlexEventPanel events={events} onCreated={reload} />
       <TrustPanel />
+      <ResetDemoLink />
     </div>
   );
 }

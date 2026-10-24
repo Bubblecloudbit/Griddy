@@ -30,6 +30,12 @@ function state(): StoreState {
   return globalStore.__gridshiftStore;
 }
 
+// Demo reset (BUILD.md A9): throw away every commit, trip, and event and re-seed (seed 42),
+// so two run-throughs in a row start from the exact same numbers.
+export function resetStore(): void {
+  globalStore.__gridshiftStore = seed();
+}
+
 export function listNeighborhoods(): Neighborhood[] {
   return state().neighborhoods;
 }
