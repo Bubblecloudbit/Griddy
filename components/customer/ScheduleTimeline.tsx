@@ -2,7 +2,8 @@
 import type { ScheduledTask } from "@/lib/types";
 import { MOCK_RATE } from "@/lib/mock";
 import { DAY_NAMES } from "@/lib/config";
-import { HORIZON_HOURS, clockLabel, hourLabel, isPeakHour } from "./hours";
+import { isPeak } from "@/lib/rates";
+import { HORIZON_HOURS, clockLabel, hourLabel } from "./hours";
 import { durationHours } from "./client";
 
 const HOURS = HORIZON_HOURS;
@@ -12,7 +13,7 @@ function PeakShading() {
   return (
     <>
       {Array.from({ length: HOURS }, (_, h) =>
-        isPeakHour(MOCK_RATE, h) ? (
+        isPeak(MOCK_RATE, h) ? (
           <div key={h} className="absolute inset-y-0 bg-red-100" style={{ left: pct(h), width: pct(1) }} />
         ) : null,
       )}

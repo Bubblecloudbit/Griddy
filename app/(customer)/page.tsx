@@ -2,12 +2,13 @@
 // Tabs: Today (ribbon, B2–B3) · Plan (appliance cards, B4–B5) · Week (B6) · Rewards (B9).
 "use client";
 
-import { useState } from "react";
-import type { FlexTask, ScheduledTask } from "@/lib/types";
-import { Nav } from "@/components/ui/Nav";
+import { useEffect, useState } from "react";
+import type { FlexTask, RatePlan, ScheduledTask } from "@/lib/types";
+import { Card, Nav } from "@/components/ui";
 import { MOCK_HOUSEHOLD } from "@/lib/mock";
-import { optimize, commitPlan } from "@/components/customer/client";
+import { optimize, commitPlan, getRates } from "@/components/customer/client";
 import { AppShell, type Tab } from "@/components/customer/AppShell";
+import { DayRibbon } from "@/components/customer/DayRibbon";
 import { TaskForm } from "@/components/customer/TaskForm";
 import { TaskList } from "@/components/customer/TaskList";
 import { ScheduleTimeline } from "@/components/customer/ScheduleTimeline";
@@ -19,22 +20,25 @@ const DEMO_TASKS: FlexTask[] = [
 ];
 
 function Placeholder({ title, text }: { title: string; text: string }) {
-  return (
-    <section className="rounded-[10px] border border-[#E4E1D8] bg-white p-4">
-      <h2 className="text-[15px] font-semibold leading-5">{title}</h2>
-      <p className="mt-1 text-xs text-[#5B6474]">{text}</p>
-    </section>
-  );
+  return <Card title={title} explainer={text} />;
 }
 
 export default function CustomerPage() {
   const [tab, setTab] = useState<Tab>("today");
+  const [rate, setRate] = useState<RatePlan | null>(null);
+  const [rateError, setRateError] = useState<string | null>(null);
   const [tasks, setTasks] = useState<FlexTask[]>(DEMO_TASKS);
   const [schedule, setSchedule] = useState<ScheduledTask[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [points, setPoints] = useState(MOCK_HOUSEHOLD.points);
   const [committedMsg, setCommittedMsg] = useState<string | null>(null);
+
+  useEffect(() => {
+    getRates()
+      .then(setRate)
+      .catch((e) => setRateError(e instanceof Error ? e.message : "Could not load rates."));
+  }, []);
 
   // Any edit to the task list makes the current schedule stale.
   function changeTasks(next: FlexTask[]) {
@@ -74,9 +78,14 @@ export default function CustomerPage() {
     <>
       <Nav />
       <AppShell tab={tab} onTab={setTab} points={points}>
-        {tab === "today" && (
-          <Placeholder title="Today" text="Peak and off-peak hours for the day will show here." />
-        )}
+        {tab === "today" &&
+          (rate ? (
+            <DayRibbon rate={rate} />
+          ) : rateError ? (
+            <p role="alert" className="text-body text-danger">{rateError}</p>
+          ) : (
+            <Card title="Peak and off-peak hours" explainer="Loading rates…" />
+          ))}
 
         {tab === "plan" && (
           <>
@@ -85,12 +94,12 @@ export default function CustomerPage() {
             <button
               onClick={runOptimize}
               disabled={busy || tasks.length === 0}
-              className="rounded-[8px] bg-[#14213D] px-4 py-2 text-sm font-medium text-white disabled:opacity-40"
+              className="rounded-control bg-ink px-4 py-2 text-sm font-medium text-white disabled:opacity-40"
             >
               {busy && !schedule ? "Finding times…" : "Find best times"}
             </button>
             {error && (
-              <p role="alert" className="text-sm text-[#B42318]">
+              <p role="alert" className="text-sm text-danger">
                 {error}
               </p>
             )}
@@ -101,11 +110,11 @@ export default function CustomerPage() {
                 <button
                   onClick={runCommit}
                   disabled={busy || committedMsg !== null}
-                  className="rounded-[8px] bg-[#14213D] px-4 py-2 text-sm font-medium text-white disabled:opacity-40"
+                  className="rounded-control bg-ink px-4 py-2 text-sm font-medium text-white disabled:opacity-40"
                 >
                   {committedMsg ? "Committed" : "Commit plan"}
                 </button>
-                {committedMsg && <p className="text-sm text-[#0F766E]">{committedMsg}</p>}
+                {committedMsg && <p className="text-sm text-plan">{committedMsg}</p>}
               </>
             )}
           </>
