@@ -3,11 +3,12 @@
 "use client";
 
 import { useState } from "react";
-import type { Hour, RatePlan } from "@/lib/types";
-import { DAY_NAMES, PLAN_DAY } from "@/lib/config";
+import type { Hour, RatePlan, ScheduledTask } from "@/lib/types";
+import { DAY_NAMES, PLAN_DAY, hourLabel as shortHour } from "@/lib/config";
 import { isPeak, priceAt } from "@/lib/rates";
 import { Card, Segmented, SourceNote, Tag } from "@/components/ui";
 import tou from "@/data/real/aep_tou.json";
+import { durationHours } from "./client";
 import { DEMO_NOW, clockLabel, windowLabel } from "./hours";
 
 const DAYS = [0, 1, 2]; // Sun–Tue, the 72 h horizon
@@ -25,7 +26,42 @@ function hourDetail(rate: RatePlan, h: Hour): string {
   return `${clockLabel(h)} · ${tier} · $${priceAt(rate, h).toFixed(2)}/kWh (illustrative)`;
 }
 
-export function DayRibbon({ rate }: { rate: RatePlan }) {
+// One row per planned task that runs on this day, clipped to the day: "EV charging 11p–1a".
+function PlannedBlocks({ schedule, day }: { schedule: ScheduledTask[]; day: number }) {
+  const rows = schedule
+    .map((t) => {
+      const end = t.start + durationHours(t);
+      const from = Math.max(t.start, day * 24);
+      const to = Math.min(end, day * 24 + 24);
+      return { t, end, from, to };
+    })
+    .filter(({ from, to }) => to > from);
+  if (rows.length === 0) return null;
+
+  return (
+    <div className="mt-2 space-y-1">
+      {rows.map(({ t, end, from, to }) => {
+        const startCol = (from % 24) + 1;
+        const endCol = startCol + (to - from);
+        // Afternoon/evening bars get their label on the left so it stays inside the card.
+        const labelCol = startCol > 12 ? `1 / ${startCol}` : `${endCol} / 25`;
+        return (
+          <div key={t.id} className="grid items-center gap-px" style={GRID}>
+            <span className="h-2 rounded-tag bg-plan" style={{ gridColumn: `${startCol} / ${endCol}`, gridRow: 1 }} />
+            <span
+              className={`whitespace-nowrap px-1 font-mono text-caption text-ink ${startCol > 12 ? "text-right" : ""}`}
+              style={{ gridColumn: labelCol, gridRow: 1 }}
+            >
+              {t.label} {shortHour(t.start)}–{shortHour(end)}
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+export function DayRibbon({ rate, schedule = [] }: { rate: RatePlan; schedule?: ScheduledTask[] }) {
   const [day, setDay] = useState(PLAN_DAY);
   const [active, setActive] = useState<Hour | null>(null);
   const hours = Array.from({ length: 24 }, (_, c) => day * 24 + c);
@@ -103,7 +139,9 @@ export function DayRibbon({ rate }: { rate: RatePlan }) {
         )}
       </div>
 
-      <p className="mt-1 min-h-4 font-mono text-caption text-ink">
+      <PlannedBlocks schedule={schedule} day={day} />
+
+      <p className="mt-2 min-h-4 font-mono text-caption text-ink">
         {active !== null
           ? hourDetail(rate, active)
           : hasPeak
