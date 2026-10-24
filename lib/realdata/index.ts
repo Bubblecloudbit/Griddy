@@ -1,15 +1,40 @@
-// lib/realdata/index.ts — STUB (owner: D)
-// Returns the mock RegionReference until real PJM/EIA JSON snapshots are added to data/real/.
+// lib/realdata/index.ts — Region reference loader (owner: D)
+// Returns the real PJM/EIA snapshot for C's region chart, or the mock until one exists.
 //
 // Synchronous and browser-safe on purpose: the snapshot is a static JSON import that
 // gets bundled into the page, so C's "use client" utility page can call this directly.
 // Never use fs or fetch here, and never call PJM/EIA live (see design.md §6).
 import type { RegionReference } from "@/lib/types";
 import { MOCK_REGION_REFERENCE } from "@/lib/mock";
-// TODO (D): once scripts/ has produced a snapshot, swap the mock for it:
+// To use a snapshot made by scripts/convert.mjs, import it and set SNAPSHOT to it:
 // import snapshot from "@/data/real/pjm-aep-2024-10-15.json";
 
+const SNAPSHOT: unknown = null; // e.g. `= snapshot;`
+
+const isNumberArray = (v: unknown): v is number[] =>
+  Array.isArray(v) && v.every((x) => typeof x === "number" && Number.isFinite(x));
+
+// Catches a bad snapshot in dev instead of letting the chart render garbage.
+function checkSnapshot(data: unknown): RegionReference {
+  const ref = data as RegionReference;
+  const hours = ref?.demandMW?.length;
+  const problems = [
+    typeof ref?.label !== "string" && "label",
+    typeof ref?.source !== "string" && "source",
+    typeof ref?.date !== "string" && "date",
+    (!isNumberArray(ref?.demandMW) || (hours !== 24 && hours !== 48)) && "demandMW (24 or 48 numbers)",
+    ref?.forecastMW !== undefined && (!isNumberArray(ref.forecastMW) || ref.forecastMW.length !== hours) && "forecastMW",
+    ref?.priceUSDperMWh !== undefined &&
+      (!isNumberArray(ref.priceUSDperMWh) || ref.priceUSDperMWh.length !== hours) &&
+      "priceUSDperMWh",
+  ].filter(Boolean);
+
+  if (problems.length > 0) {
+    throw new Error(`Region snapshot doesn't match RegionReference: ${problems.join(", ")}`);
+  }
+  return ref;
+}
+
 export function getRegionReference(): RegionReference {
-  // TODO (D): return snapshot as RegionReference;
-  return MOCK_REGION_REFERENCE;
+  return SNAPSHOT === null ? MOCK_REGION_REFERENCE : checkSnapshot(SNAPSHOT);
 }
