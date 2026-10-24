@@ -1,8 +1,8 @@
 // components/customer/client.ts — the customer app's only door to the backend (owner: B)
 // Flip USE_MOCKS to false once A's real /api/optimize and /api/plan land.
-import type { FlexTask, LoadFlag, ScheduledTask } from "@/lib/types";
+import type { FlexTask, LoadFlag, RatePlan, ScheduledTask } from "@/lib/types";
 import { MOCK_RATE } from "@/lib/mock";
-import { isPeakHour } from "./hours";
+import { priceAt } from "@/lib/rates";
 
 const USE_MOCKS = true;
 
@@ -22,6 +22,11 @@ export async function optimize(tasks: FlexTask[]): Promise<ScheduledTask[]> {
   });
 }
 
+// /api/rates is live (A2), so no mock here.
+export async function getRates(): Promise<RatePlan> {
+  return get<RatePlan>("/api/rates");
+}
+
 // Returns GridPoints earned by this commit.
 export async function commitPlan(tasks: FlexTask[], flags: LoadFlag[]): Promise<number> {
   const data = await post<{ points: number }>("/api/plan", {
@@ -30,6 +35,13 @@ export async function commitPlan(tasks: FlexTask[], flags: LoadFlag[]): Promise<
     flags,
   });
   return data.points;
+}
+
+async function get<T>(url: string): Promise<T> {
+  const res = await fetch(url);
+  const data = await res.json();
+  if (!res.ok) throw new Error(data?.error ?? `Request failed (${res.status})`);
+  return data as T;
 }
 
 async function post<T>(url: string, body: unknown): Promise<T> {
@@ -48,7 +60,7 @@ async function post<T>(url: string, body: unknown): Promise<T> {
 // the tasks the user actually enters. Delete once USE_MOCKS is false.
 
 function price(h: number): number {
-  return isPeakHour(MOCK_RATE, h) ? MOCK_RATE.onPeak : MOCK_RATE.offPeak;
+  return priceAt(MOCK_RATE, h);
 }
 
 function energyCost(task: FlexTask, start: number): number {
