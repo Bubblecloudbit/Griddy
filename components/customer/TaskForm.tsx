@@ -3,7 +3,7 @@
 
 import { useState } from "react";
 import type { FlexTask } from "@/lib/types";
-import { hourOptions } from "./hours";
+import { HORIZON_HOURS, hourOptions } from "./hours";
 
 // Typical appliance numbers from design.md §3 (illustrative).
 const PRESETS = [
@@ -19,8 +19,8 @@ export function TaskForm({ onAdd }: { onAdd: (task: FlexTask) => void }) {
   const [label, setLabel] = useState(PRESETS[0].label);
   const [kWh, setKWh] = useState(PRESETS[0].kWh);
   const [powerKW, setPowerKW] = useState(PRESETS[0].powerKW);
-  const [earliestStart, setEarliestStart] = useState(18);
-  const [deadline, setDeadline] = useState(31);
+  const [earliestStart, setEarliestStart] = useState(40);
+  const [deadline, setDeadline] = useState(55);
 
   function applyPreset(name: string) {
     const preset = PRESETS.find((p) => p.label === name);
@@ -84,7 +84,7 @@ export function TaskForm({ onAdd }: { onAdd: (task: FlexTask) => void }) {
             className={inputClass} value={earliestStart}
             onChange={(e) => setEarliestStart(Number(e.target.value))}
           >
-            {hourOptions(0, 47).map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+            {hourOptions(0, HORIZON_HOURS - 1).map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
           </select>
         </label>
         <label className="text-xs text-slate-500">
@@ -93,7 +93,7 @@ export function TaskForm({ onAdd }: { onAdd: (task: FlexTask) => void }) {
             className={inputClass} value={deadline}
             onChange={(e) => setDeadline(Number(e.target.value))}
           >
-            {hourOptions(1, 48).map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+            {hourOptions(1, HORIZON_HOURS).map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
           </select>
         </label>
       </div>

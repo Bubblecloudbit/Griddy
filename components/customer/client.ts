@@ -2,6 +2,7 @@
 // Flip USE_MOCKS to false once A's real /api/optimize and /api/plan land.
 import type { FlexTask, LoadFlag, ScheduledTask } from "@/lib/types";
 import { MOCK_RATE } from "@/lib/mock";
+import { isPeakHour } from "./hours";
 
 const USE_MOCKS = true;
 
@@ -47,7 +48,7 @@ async function post<T>(url: string, body: unknown): Promise<T> {
 // the tasks the user actually enters. Delete once USE_MOCKS is false.
 
 function price(h: number): number {
-  return MOCK_RATE.peakHours.includes(h % 24) ? MOCK_RATE.onPeak : MOCK_RATE.offPeak;
+  return isPeakHour(MOCK_RATE, h) ? MOCK_RATE.onPeak : MOCK_RATE.offPeak;
 }
 
 function energyCost(task: FlexTask, start: number): number {

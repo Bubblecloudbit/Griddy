@@ -1,17 +1,18 @@
-// components/customer/ScheduleTimeline.tsx — 48-hour view of recommended run times (owner: B)
+// components/customer/ScheduleTimeline.tsx — 72-hour view of recommended run times (owner: B)
 import type { ScheduledTask } from "@/lib/types";
 import { MOCK_RATE } from "@/lib/mock";
-import { clockLabel, hourLabel } from "./hours";
+import { DAY_NAMES } from "@/lib/config";
+import { HORIZON_HOURS, clockLabel, hourLabel, isPeakHour } from "./hours";
 import { durationHours } from "./client";
 
-const HOURS = 48;
+const HOURS = HORIZON_HOURS;
 const pct = (h: number) => `${(h / HOURS) * 100}%`;
 
 function PeakShading() {
   return (
     <>
       {Array.from({ length: HOURS }, (_, h) =>
-        MOCK_RATE.peakHours.includes(h % 24) ? (
+        isPeakHour(MOCK_RATE, h) ? (
           <div key={h} className="absolute inset-y-0 bg-red-100" style={{ left: pct(h), width: pct(1) }} />
         ) : null,
       )}
@@ -34,9 +35,9 @@ export function ScheduleTimeline({ schedule }: { schedule: ScheduledTask[] }) {
       <div className="mt-3 overflow-x-auto">
         <div className="min-w-[560px]">
           <div className="relative ml-28 h-5 text-[10px] text-slate-400">
-            {[0, 6, 12, 18, 24, 30, 36, 42].map((h) => (
+            {[0, 12, 24, 36, 48, 60].map((h) => (
               <span key={h} className="absolute -translate-x-1/2" style={{ left: pct(h) }}>
-                {h === 0 ? "Today" : h === 24 ? "Tomorrow" : clockLabel(h)}
+                {h % 24 === 0 ? DAY_NAMES[h / 24] : clockLabel(h)}
               </span>
             ))}
           </div>
@@ -55,7 +56,9 @@ export function ScheduleTimeline({ schedule }: { schedule: ScheduledTask[] }) {
                   style={{ left: pct(t.start), width: pct(durationHours(t)) }}
                   title={`${t.label}: starts ${hourLabel(t.start)}`}
                 />
-                <div className="absolute inset-y-0 border-l border-slate-300" style={{ left: pct(24) }} />
+                {[24, 48].map((h) => (
+                  <div key={h} className="absolute inset-y-0 border-l border-slate-300" style={{ left: pct(h) }} />
+                ))}
               </div>
             </div>
           ))}
