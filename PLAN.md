@@ -56,7 +56,8 @@ Hourly slots over a 24–48 h horizon. Each task needs `durationHours = ceil(kWh
 For each candidate start hour, score:
 
 ```
-cost(h) = Σ over run hours [ price[h] × powerKW ]  +  λ × Σ over run hours ( neighborhoodLoad[h] / capacity )²
+score(s) = Σ over run hours h [ price[h] × kWh drawn in h ]  +  λ × Σ over run hours h ( neighborhoodLoad[h] / capacity )²
+           └──────────── $ cost (shown to customer) ────────┘     └──── congestion penalty (only picks the start) ────┘
 ```
 
 - **Uncoordinated:** λ = 0. Everyone picks the cheapest window, so they all start at the same hour → spike.

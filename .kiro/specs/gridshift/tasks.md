@@ -39,8 +39,8 @@ Commit: `scaffold: stub api routes`
 
 ## Task 6 — Stub `lib/realdata/index.ts` [D]
 ```ts
-export async function getRegionReference(): Promise<RegionReference> {
-  return MOCK_REGION_REFERENCE; // replace with real JSON loader in Task D
+export function getRegionReference(): RegionReference { // sync + browser-safe, see design.md §6
+  return MOCK_REGION_REFERENCE; // D swaps in a static import of data/real/*.json
 }
 ```
 Commit: `scaffold: realdata stub`

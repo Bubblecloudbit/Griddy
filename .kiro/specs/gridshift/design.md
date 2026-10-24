@@ -96,38 +96,57 @@ interface RegionReference {
 ## 2. Optimizer (`lib/optimizer.ts`) — pseudocode
 
 ```
-function optimize(tasks, neighborhoodLoad, ratePlan, lambda):
-  sort tasks by flexibility ascending
-    flexibility = deadline - earliestStart - durationHours
-  
+price(hour)      = ratePlan.peakHours.includes(hour % 24) ? ratePlan.onPeak : ratePlan.offPeak
+duration(task)   = ceil(task.kWh / task.powerKW)
+
+// kWh drawn in the i-th run hour. Full power every hour except the last,
+// which only draws what's left (10 kWh at 7.2 kW → [7.2, 2.8], not [7.2, 7.2]).
+kwhInRunHour(task, i) = min(task.powerKW, task.kWh - i * task.powerKW)
+
+// Real (illustrative) $ cost of running the task starting at hour s. Shown to the customer.
+energyCost(task, s) = sum over i in [0 .. duration-1]:
+  price(s + i) * kwhInRunHour(task, i)
+
+// Penalty for crowded hours. Used ONLY to choose the start; never shown as $.
+congestion(task, s, sharedLoad, capacity) = sum over i in [0 .. duration-1]:
+  (sharedLoad[s + i] / capacity)^2          // index by each run hour, not the start hour
+
+function optimize(tasks, neighborhoodLoad, capacity, ratePlan, lambda):
+  sort tasks by flexibility ascending        // least flexible goes first
+    flexibility = deadline - earliestStart - duration(task)
+
   schedule = []
-  sharedLoad = copy(neighborhoodLoad)   // 48 floats
-  
+  sharedLoad = copy(neighborhoodLoad)        // 48 floats, kW
+
   for task in tasks:
-    durationHours = ceil(task.kWh / task.powerKW)
-    bestStart = null
+    lastStart = task.deadline - duration(task)   // must finish by deadline (exclusive end)
+    if lastStart < task.earliestStart:
+      return error "No feasible window for <label>"   // R1 acceptance criterion 3
+
+    bestStart = task.earliestStart
     bestScore = Infinity
-    
-    for h in [task.earliestStart .. task.deadline - durationHours]:
-      energyCost = sum over [h .. h+durationHours-1]:
-        ratePlan.price(hour) * task.powerKW   // price(hour): onPeak if peakHours.includes(hour % 24), else offPeak
-      
-      congestion = lambda * sum over [h .. h+durationHours-1]:
-        (sharedLoad[h] / neighborhoodCapacity)^2
-      
-      score = energyCost + congestion
-      if score < bestScore:
+    for s in [task.earliestStart .. lastStart]:           // inclusive
+      score = energyCost(task, s) + lambda * congestion(task, s, sharedLoad, capacity)
+      if score < bestScore:                               // strict <, so ties keep the earliest start
         bestScore = score
-        bestStart = h
-    
-    place task at bestStart
-    add task.powerKW to sharedLoad[bestStart .. bestStart+durationHours-1]
-    schedule.push({ ...task, start: bestStart, cost: bestScore, baselineCost: costAt(task.earliestStart) })
-  
+        bestStart = s
+
+    for i in [0 .. duration-1]:
+      sharedLoad[bestStart + i] += kwhInRunHour(task, i)  // kWh in a 1-hour slot = average kW
+
+    schedule.push({
+      ...task,
+      start: bestStart,
+      cost: energyCost(task, bestStart),                  // $ only, no congestion term
+      baselineCost: energyCost(task, task.earliestStart), // "run it now" = start at plug-in time
+    })
+
   return schedule
 
-// Uncoordinated:  lambda = 0  → everyone picks cheapest hour → spike
+// Uncoordinated:  lambda = 0  → everyone picks cheapest hour → spike (P2 demo)
 // Coordinated:    lambda > 0  → later tasks avoid crowded hours → flat
+// Tuning: one off-peak EV hour costs ~$0.50 and a full transformer adds ~1.0 per hour,
+// so start with lambda ≈ 1–3 and adjust until the planned curve looks sensible.
 ```
 
 ---
@@ -195,7 +214,30 @@ Response: `{ reply: string, tasks?: FlexTask[], flags?: LoadFlag[] }`
 
 ---
 
-## 6. Folder Layout & Ownership
+## 6. Region Reference Data (real PJM/EIA snapshot)
+
+No API route. The data reaches the region chart through a static JSON import:
+
+```
+data/raw/*.csv                      (D downloads; gitignored)
+   │  scripts/convert.mjs           (D, run by hand)
+   ▼
+data/real/<name>.json               (D commits; shape = RegionReference)
+   │  static import
+   ▼
+lib/realdata/index.ts               (D) export function getRegionReference(): RegionReference
+   │  direct call (synchronous, browser-safe)
+   ▼
+app/utility + components/utility    (C) region chart
+```
+
+- `getRegionReference()` is **synchronous** and must stay browser-safe: no `fs`, no `fetch`, no live PJM/EIA calls. It returns `MOCK_REGION_REFERENCE` until D swaps in the snapshot import, so C can build against it now and nothing changes for C when the real data lands.
+- The JSON matches `RegionReference` exactly. `demandMW` is in **MW** (whole PJM/AEP zone) while `Forecast` is in **kW** (our homes). C shows them on separate axes or side-by-side charts, never on one axis.
+- C displays `source` and `date` on screen (R4 acceptance criterion 3).
+
+---
+
+## 7. Folder Layout & Ownership
 
 ```
 gridshift/
