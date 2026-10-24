@@ -17,6 +17,7 @@ const COLUMNS = {
   time: ["datetime_beginning_ept", "forecast_datetime_beginning_ept", "local time at end of hour"],
   evaluated: ["evaluated_at_datetime_ept", "evaluated_at_ept"],
   area: ["zone", "forecast_area", "balancing authority", "sub-region", "subregion", "respondent", "pnode_name"],
+  part: ["load_area", "pnode_name"], // pieces of the area that get summed (demand) or averaged (price)
   demand: ["mw", "demand (mw)", "demand (mw) (adjusted)", "load_mw"],
   forecast: ["forecast_load_mw", "demand forecast (mw)", "day-ahead demand forecast (mw)"],
   price: ["total_lmp_da", "total_lmp_rt", "lmp"],
@@ -116,8 +117,15 @@ const sum = (xs) => xs.reduce((a, b) => a + b, 0);
 
 // demand: sum the load areas inside the zone. price: average the nodes.
 // forecast: the newest forecast readSeries kept (day-ahead, or any in forecast-only mode).
+// A load area with two rows in one slot (the repeated 1 AM on a fall-back DST day) is averaged, not summed.
+function sumByPart(entries) {
+  const parts = new Map();
+  for (const e of entries) parts.set(e.part, [...(parts.get(e.part) ?? []), e.value]);
+  return sum([...parts.values()].map((values) => sum(values) / values.length));
+}
+
 function combine(kind, entries) {
-  if (kind === "demand") return sum(entries.map((e) => e.value));
+  if (kind === "demand") return sumByPart(entries);
   if (kind === "forecast" && entries[0].evaluated !== null) {
     return entries.reduce((best, e) => (e.evaluated > best.evaluated ? e : best)).value;
   }
@@ -140,6 +148,7 @@ function readSeries(file, kind, opts) {
   }
   const areaCol = findColumn(header, COLUMNS.area);
   const evalCol = kind === "forecast" ? findColumn(header, COLUMNS.evaluated) : -1;
+  const partCol = findColumn(header, COLUMNS.part);
   const hourEnding = header[timeCol].includes("end of hour"); // EIA labels the hour by its end
   checkAreas(rows, areaCol, opts.area, file);
 
@@ -162,7 +171,7 @@ function readSeries(file, kind, opts) {
       if (evaluated === null) continue;
       if (!opts.forecastOnly && evaluated >= dayStart) continue; // keep day-ahead forecasts only
     }
-    slots[index].push({ value, evaluated });
+    slots[index].push({ value, evaluated, part: partCol >= 0 ? row[partCol] : "" });
   }
 
   const missing = slots.flatMap((s, i) => (s.length === 0 ? [i] : []));

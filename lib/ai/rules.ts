@@ -7,14 +7,14 @@
 // Trips are dates inside the 7-day outlook (Oct 25–31), not flags.
 import type { Appliance as ApplianceId, FlexTask, Hour, LoadFlag, Trip } from "@/lib/types";
 import { DAY_NAMES, DEMO_DAY_0, HORIZON_HOURS, OUTLOOK_DAYS, PLAN_DAY, dayLabel, weekdayOf } from "@/lib/config";
-import { MOCK_ROUTINE } from "@/lib/mock";
+import { ROUTINE_PRESETS } from "@/lib/routines";
 import tou from "@/data/real/aep_tou.json";
 import type { CoachResult } from "@/lib/ai/coach";
 
 // ---------------------------------------------------------------------------
-// Appliance catalog — simulated energy numbers, matching lib/mock.ts
+// Appliance catalog — simulated energy numbers and labels, matching lib/community.ts
 // ---------------------------------------------------------------------------
-interface Appliance {
+export interface Appliance {
   id: ApplianceId;
   label: string;
   kWh: number;
@@ -22,12 +22,12 @@ interface Appliance {
   pattern: RegExp;
 }
 
-const APPLIANCES: Appliance[] = [
-  { id: "ev", label: "EV Charging", kWh: 10, powerKW: 7.2, pattern: /\b(ev|car|tesla|vehicle|charg(e|ing))\b/ },
+export const APPLIANCES: Appliance[] = [
+  { id: "ev", label: "EV charging", kWh: 10, powerKW: 7.2, pattern: /\b(ev|car|tesla|vehicle|charg(e|ing))\b/ },
   { id: "dishwasher", label: "Dishwasher", kWh: 1.2, powerKW: 1.5, pattern: /\bdish(es|washer)?\b/ },
   { id: "other", label: "Washer", kWh: 1.0, powerKW: 0.5, pattern: /\b(washer|washing machine|laundry)\b/ },
   { id: "dryer", label: "Dryer", kWh: 1.5, powerKW: 3.0, pattern: /\b(dryer|dry)\b/ },
-  { id: "water_heater", label: "Water Heater", kWh: 2.0, powerKW: 4.5, pattern: /\bwater heater\b/ },
+  { id: "water_heater", label: "Water heater", kWh: 2.0, powerKW: 4.5, pattern: /\bwater heater\b/ },
 ];
 
 const AWAY_PATTERN = /\b(away|vacation|out of town|traveling|travelling|trip)\b/;
@@ -36,7 +36,7 @@ const TIME_PATTERN = /\b(after|from|starting|by|before|until)\s+(\d|noon|midnigh
 
 const HIGH_LOAD_DELTA_KW = 2.0; // simulated: extra load for guests or a big project
 const PLAN_DAY_START: Hour = PLAN_DAY * 24; // Mon 12 AM
-const DEFAULT_PLUG_IN = MOCK_ROUTINE.plugInHour; // 4 PM, the demo routine (Early shift)
+const DEFAULT_PLUG_IN = ROUTINE_PRESETS.early_shift.routine.plugInHour; // 4 PM, Jordan's routine in the demo
 const SUNDAY_EVENING: Hour = 18; // the demo opens Sun 6 PM ("tonight" starts here)
 
 // ---------------------------------------------------------------------------
