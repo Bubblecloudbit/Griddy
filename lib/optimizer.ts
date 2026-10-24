@@ -2,7 +2,8 @@
 // Picks each task's start hour by minimizing: energy $ + lambda × congestion.
 // See design.md §2 for the pseudocode this follows line for line.
 import type { FlexTask, Hour, RatePlan, ScheduledTask } from "@/lib/types";
-import { priceAt } from "@/lib/rates";
+import { isPeak, priceAt } from "@/lib/rates";
+import { explainStart } from "@/lib/reasons";
 
 export const COORDINATED_LAMBDA = 2; // ~0.5 $/EV-hour vs ~1.0 penalty/full-transformer-hour
 
@@ -24,6 +25,15 @@ export function energyCost(task: FlexTask, start: Hour, rate: RatePlan): number 
     cost += priceAt(rate, start + i) * kwhInRunHour(task, i);
   }
   return cost;
+}
+
+// kWh the task draws inside peak hours if it starts at `start`.
+export function peakKWh(task: FlexTask, start: Hour, rate: RatePlan): number {
+  let kwh = 0;
+  for (let i = 0; i < duration(task); i++) {
+    if (isPeak(rate, start + i)) kwh += kwhInRunHour(task, i);
+  }
+  return kwh;
 }
 
 // Penalty for running in crowded hours. Used only to choose the start, never shown as $.
@@ -60,7 +70,7 @@ function bestStart(task: FlexTask, sharedLoad: number[], capacityKW: number, rat
   return best;
 }
 
-// Adds a task's draw to a 48-hour load curve, in place. kWh in a 1-hour slot = average kW.
+// Adds a task's draw to a 72-hour load curve, in place. kWh in a 1-hour slot = average kW.
 export function addTaskLoad(load: number[], task: FlexTask, start: Hour): void {
   for (let i = 0; i < duration(task); i++) {
     load[start + i] += kwhInRunHour(task, i);
@@ -84,12 +94,18 @@ export function optimize(
   for (const i of order) {
     const task = tasks[i];
     const start = bestStart(task, sharedLoad, capacityKW, rate, lambda);
+    const priceOnlyStart = lambda > 0 ? bestStart(task, sharedLoad, capacityKW, rate, 0) : start;
     addTaskLoad(sharedLoad, task, start);
+
+    const peakAtStart = peakKWh(task, start, rate);
+    const peakKWhAvoided = round2(peakKWh(task, task.earliestStart, rate) - peakAtStart);
     scheduled[i] = {
       ...task,
       start,
       cost: round2(energyCost(task, start, rate)),
       baselineCost: round2(energyCost(task, task.earliestStart, rate)), // "run it now" = start at plug-in
+      peakKWhAvoided,
+      reason: explainStart(task, start, priceOnlyStart, peakKWhAvoided, peakAtStart, rate),
     };
   }
 
