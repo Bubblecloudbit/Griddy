@@ -6,7 +6,8 @@
 ## Before you start
 | Step | How |
 |---|---|
-| Fresh state | Restart `npm run dev` (in-memory store resets). After A9 lands: the hidden reset link on `/utility`. |
+| Fresh state | Double-click **"Reset demo"** at the bottom of the AEP Overview (`/utility`; faint until hovered), then reload the customer tab. Do this before every take and between judges. Don't restart `npm run dev` between takes: the first load after a restart is slow on camera. |
+| Warm up | Before recording, open `/`, `/utility`, `/utility/heatmaps`, `/utility/events`, `/methodology` once so no page compiles on camera. |
 | Windows | Left: customer app `/` at phone width. Right: `/utility` at 1440 px. Third tab: `/methodology`. |
 | Who | **Driver** clicks (B knows the customer app best). **Narrator** talks (D). C stands by for AEP-side questions. |
 | Check | Points chip reads **150**. KPI strip reads **297** enrolled, **−28.3%** peak-hour load. |
