@@ -1,15 +1,21 @@
-// GET/POST /api/events — STUB (owner: A)
-// GET  Response: FlexEvent[]
-// POST Request:  { startHour, endHour, multiplier, message } -> FlexEvent
+// GET/POST /api/events (owner: A) — Flex Events created by the utility.
+// GET  Response: FlexEvent[]  (empty until the utility creates one)
+// POST Request:  { startHour, endHour, multiplier, message } -> FlexEvent  |  { error } with 400
 import { NextResponse } from "next/server";
-import { MOCK_FLEX_EVENT } from "@/lib/mock";
+import { createEvent, listEvents } from "@/lib/store";
+import { BadRequest, errorResponse, parseEvent, readJson } from "@/lib/validate";
+
+export const dynamic = "force-dynamic"; // reads the live store; never cache
 
 export async function GET() {
-  // TODO (A): list Flex Events from lib/store.ts.
-  return NextResponse.json([MOCK_FLEX_EVENT]);
+  return NextResponse.json(listEvents());
 }
 
-export async function POST() {
-  // TODO (A): create and persist a Flex Event.
-  return NextResponse.json(MOCK_FLEX_EVENT);
+export async function POST(req: Request) {
+  try {
+    return NextResponse.json(createEvent(parseEvent(await readJson(req))));
+  } catch (e) {
+    if (e instanceof BadRequest) return errorResponse(e.message);
+    throw e;
+  }
 }
