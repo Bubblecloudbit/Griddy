@@ -1,6 +1,6 @@
 // components/customer/client.ts — the customer app's only door to the backend (owner: B)
-// All calls go to A's real engine (/api/optimize, /api/plan, /api/rates).
-import type { FlexTask, LoadFlag, RatePlan, ScheduledTask, Trip, WeeklyRoutine } from "@/lib/types";
+// All calls go to A's real engine (/api/optimize, /api/plan, /api/rates, /api/events).
+import type { FlexEvent, FlexTask, LoadFlag, RatePlan, ScheduledTask, Trip, WeeklyRoutine } from "@/lib/types";
 
 export const HOUSEHOLD_ID = "h-jordan";
 export const NEIGHBORHOOD_ID = "n1";
@@ -20,6 +20,11 @@ export async function optimize(tasks: FlexTask[]): Promise<ScheduledTask[]> {
 
 export async function getRates(): Promise<RatePlan> {
   return get<RatePlan>("/api/rates");
+}
+
+// Flex Events created on the AEP side. Polled every 5 s by the page.
+export async function getEvents(): Promise<FlexEvent[]> {
+  return get<FlexEvent[]>("/api/events");
 }
 
 export interface PlanCommit {

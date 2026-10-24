@@ -3,15 +3,19 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { FlexTask, RatePlan, ScheduledTask, Trip, WeeklyRoutine } from "@/lib/types";
+import type { FlexEvent, FlexTask, RatePlan, ScheduledTask, Trip, WeeklyRoutine } from "@/lib/types";
 import { Card, Nav, useToast } from "@/components/ui";
 import { MOCK_HOUSEHOLD, MOCK_ROUTINE } from "@/lib/mock";
-import { optimize, commitPlan, getRates } from "@/components/customer/client";
+import { optimize, commitPlan, getEvents, getRates } from "@/components/customer/client";
 import { AppShell, type Tab } from "@/components/customer/AppShell";
 import { DayRibbon } from "@/components/customer/DayRibbon";
 import { BestTime, PlanStats } from "@/components/customer/TodaySummary";
 import { PlanTab } from "@/components/customer/PlanTab";
 import { WeekTab } from "@/components/customer/WeekTab";
+import { FlexEventBanner } from "@/components/customer/FlexEventBanner";
+import { DEMO_NOW } from "@/components/customer/hours";
+
+const EVENT_POLL_MS = 5000;
 
 function Placeholder({ title, text }: { title: string; text: string }) {
   return <Card title={title} explainer={text} />;
@@ -30,6 +34,9 @@ export default function CustomerPage() {
   const [busy, setBusy] = useState(false);
   const [points, setPoints] = useState(MOCK_HOUSEHOLD.points);
   const [committed, setCommitted] = useState(false);
+  const [events, setEvents] = useState<FlexEvent[]>([]);
+  const [joinedIds, setJoinedIds] = useState<string[]>([]);
+  const [countedIds, setCountedIds] = useState<string[]>([]);
   const { showToast, toast } = useToast();
 
   useEffect(() => {
@@ -37,6 +44,19 @@ export default function CustomerPage() {
       .then(setRate)
       .catch((e) => setRateError(e instanceof Error ? e.message : "Could not load rates."));
   }, []);
+
+  // Poll for Flex Events created on the AEP side. A failed poll just keeps the last list.
+  useEffect(() => {
+    const load = () => getEvents().then(setEvents).catch(() => {});
+    load();
+    const id = setInterval(load, EVENT_POLL_MS);
+    return () => clearInterval(id);
+  }, []);
+
+  // Newest event that hasn't ended yet on the demo clock.
+  const upcomingEvent = events.filter((e) => e.endHour > DEMO_NOW).at(-1) ?? null;
+  // A joined event earns its bonus on the first commit after joining (the engine skips repeats).
+  const newEvent = events.find((e) => joinedIds.includes(e.id) && !countedIds.includes(e.id)) ?? null;
 
   // Any edit to the task list makes the current schedule stale.
   function changeTasks(next: FlexTask[]) {
@@ -62,8 +82,10 @@ export default function CustomerPage() {
   async function runCommit() {
     setBusy(true);
     try {
-      const { points: total, earned } = await commitPlan({ tasks, trips, routine });
-      showToast(`Plan committed · +${earned} GridPoints`);
+      const { points: total, earned } = await commitPlan({ tasks, trips, routine, eventIds: joinedIds });
+      const bonus = newEvent ? ` (${newEvent.multiplier}× Flex Event)` : "";
+      showToast(`Plan committed · +${earned} GridPoints${bonus}`);
+      setCountedIds(joinedIds);
       setPoints(total);
       setCommitted(true);
     } catch (e) {
@@ -83,6 +105,16 @@ export default function CustomerPage() {
               <BestTime rate={rate} />
               <DayRibbon rate={rate} schedule={schedule ?? []} />
               <PlanStats schedule={schedule ?? []} />
+              {upcomingEvent && (
+                <FlexEventBanner
+                  event={upcomingEvent}
+                  joined={joinedIds.includes(upcomingEvent.id)}
+                  onJoin={() => {
+                    setJoinedIds((ids) => [...ids, upcomingEvent.id]);
+                    setCommitted(false);
+                  }}
+                />
+              )}
             </>
           ) : rateError ? (
             <p role="alert" className="text-body text-danger">{rateError}</p>

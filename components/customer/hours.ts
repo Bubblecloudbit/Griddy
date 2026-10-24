@@ -1,6 +1,6 @@
 // components/customer/hours.ts — display helpers for the 72-hour horizon (owner: B)
 // Hour 0 = midnight Sun Oct 25 (DEMO_DAY_0); 24–47 = Mon; 48–71 = Tue; 72 = midnight ending Tue.
-import type { Hour } from "@/lib/types";
+import type { FlexEvent, Hour } from "@/lib/types";
 import { DAY_NAMES, DEMO_DAY_0, HORIZON_HOURS, OUTLOOK_DAYS, dayLabel, dayOf } from "@/lib/config";
 
 export { HORIZON_HOURS };
@@ -28,6 +28,12 @@ export function windowLabel(clockHours: number[]): string {
   const [startNum, startAmPm] = clockLabel(start).split(" ");
   const endLabel = clockLabel(end);
   return startAmPm === endLabel.split(" ")[1] ? `${startNum}–${endLabel}` : `${clockLabel(start)}–${endLabel}`;
+}
+
+// FlexEvent Mon 4–6 PM (h40–42) → "Mon 4–6 PM"
+export function eventLabel(e: Pick<FlexEvent, "startHour" | "endHour">): string {
+  const clockHours = Array.from({ length: e.endHour - e.startHour }, (_, i) => (e.startHour + i) % 24);
+  return `${DAY_NAMES[dayOf(e.startHour) % 7]} ${windowLabel(clockHours)}`;
 }
 
 export function hourOptions(from: Hour, to: Hour): { value: number; label: string }[] {
