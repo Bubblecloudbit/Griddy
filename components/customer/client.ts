@@ -2,7 +2,7 @@
 // Flip USE_MOCKS to false once A's real /api/optimize and /api/plan land.
 import type { FlexTask, LoadFlag, RatePlan, ScheduledTask } from "@/lib/types";
 import { MOCK_RATE } from "@/lib/mock";
-import { priceAt } from "@/lib/rates";
+import { isPeak, priceAt } from "@/lib/rates";
 
 const USE_MOCKS = true;
 
@@ -63,12 +63,21 @@ function price(h: number): number {
   return priceAt(MOCK_RATE, h);
 }
 
+// kWh drawn in the i-th hour of a run (the last hour may be partial).
+function kWhInHour(task: FlexTask, i: number): number {
+  return Math.min(task.powerKW, task.kWh - i * task.powerKW);
+}
+
 function energyCost(task: FlexTask, start: number): number {
   let cost = 0;
-  for (let i = 0; i < durationHours(task); i++) {
-    cost += price(start + i) * Math.min(task.powerKW, task.kWh - i * task.powerKW);
-  }
+  for (let i = 0; i < durationHours(task); i++) cost += price(start + i) * kWhInHour(task, i);
   return cost;
+}
+
+function peakKWh(task: FlexTask, start: number): number {
+  let kWh = 0;
+  for (let i = 0; i < durationHours(task); i++) if (isPeak(MOCK_RATE, start + i)) kWh += kWhInHour(task, i);
+  return kWh;
 }
 
 function mockOptimize(tasks: FlexTask[]): ScheduledTask[] {
@@ -86,6 +95,7 @@ function mockOptimize(tasks: FlexTask[]): ScheduledTask[] {
       start: best,
       cost: energyCost(task, best),
       baselineCost: energyCost(task, task.earliestStart),
+      peakKWhAvoided: peakKWh(task, task.earliestStart) - peakKWh(task, best),
     };
   });
 }

@@ -9,6 +9,7 @@ import { MOCK_HOUSEHOLD } from "@/lib/mock";
 import { optimize, commitPlan, getRates } from "@/components/customer/client";
 import { AppShell, type Tab } from "@/components/customer/AppShell";
 import { DayRibbon } from "@/components/customer/DayRibbon";
+import { BestTime, PlanStats } from "@/components/customer/TodaySummary";
 import { TaskForm } from "@/components/customer/TaskForm";
 import { TaskList } from "@/components/customer/TaskList";
 import { ScheduleTimeline } from "@/components/customer/ScheduleTimeline";
@@ -80,7 +81,11 @@ export default function CustomerPage() {
       <AppShell tab={tab} onTab={setTab} points={points}>
         {tab === "today" &&
           (rate ? (
-            <DayRibbon rate={rate} />
+            <>
+              <BestTime rate={rate} />
+              <DayRibbon rate={rate} />
+              <PlanStats schedule={schedule ?? []} />
+            </>
           ) : rateError ? (
             <p role="alert" className="text-body text-danger">{rateError}</p>
           ) : (
