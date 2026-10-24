@@ -13,6 +13,7 @@ import { BestTime, PlanStats } from "@/components/customer/TodaySummary";
 import { PlanTab } from "@/components/customer/PlanTab";
 import { WeekTab } from "@/components/customer/WeekTab";
 import { FlexEventBanner } from "@/components/customer/FlexEventBanner";
+import { CommandBar } from "@/components/customer/CommandBar";
 import { DEMO_NOW } from "@/components/customer/hours";
 
 const EVENT_POLL_MS = 5000;
@@ -66,6 +67,20 @@ export default function CustomerPage() {
     setCommitted(false);
   }
 
+  // Items the user confirmed from the command bar.
+  function addFromCoach(newTasks: FlexTask[], newTrips: Trip[]) {
+    if (newTasks.length) changeTasks([...tasks, ...newTasks]);
+    if (newTrips.length) {
+      setTrips([...trips, ...newTrips]);
+      setCommitted(false);
+    }
+    const parts = [
+      newTasks.length && `${newTasks.length} appliance${newTasks.length > 1 ? "s" : ""}`,
+      newTrips.length && `${newTrips.length} trip${newTrips.length > 1 ? "s" : ""}`,
+    ].filter(Boolean);
+    if (parts.length) showToast(`Added ${parts.join(" and ")} · see Plan and Week`);
+  }
+
   async function runOptimize() {
     setBusy(true);
     setError(null);
@@ -99,6 +114,7 @@ export default function CustomerPage() {
     <>
       <Nav />
       <AppShell tab={tab} onTab={setTab} points={points}>
+        {tab === "today" && <CommandBar onConfirm={addFromCoach} />}
         {tab === "today" &&
           (rate ? (
             <>

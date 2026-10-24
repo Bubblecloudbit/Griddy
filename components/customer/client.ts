@@ -27,6 +27,18 @@ export async function getEvents(): Promise<FlexEvent[]> {
   return get<FlexEvent[]>("/api/events");
 }
 
+export interface CoachReply {
+  reply: string;
+  tasks?: FlexTask[];
+  trips?: Trip[];
+  flags?: LoadFlag[];
+}
+
+// Plain language → proposed tasks/trips (D's coach; rule-based when there's no API key).
+export async function askCoach(message: string): Promise<CoachReply> {
+  return post<CoachReply>("/api/coach", { message });
+}
+
 export interface PlanCommit {
   tasks: FlexTask[];
   flags?: LoadFlag[];
@@ -40,11 +52,15 @@ export async function commitPlan(plan: PlanCommit): Promise<{ points: number; ea
   return post<{ points: number; earned: number }>("/api/plan", { householdId: HOUSEHOLD_ID, flags: [], ...plan });
 }
 
-async function get<T>(url: string): Promise<T> {
-  const res = await fetch(url);
-  const data = await res.json();
-  if (!res.ok) throw new Error(data?.error ?? `Request failed (${res.status})`);
+// A non-JSON body (e.g. a dev-server error page) becomes "Request failed (404)", not a parse error.
+async function read<T>(res: Response): Promise<T> {
+  const data = await res.json().catch(() => null);
+  if (!res.ok || data === null) throw new Error(data?.error ?? `Request failed (${res.status})`);
   return data as T;
+}
+
+async function get<T>(url: string): Promise<T> {
+  return read<T>(await fetch(url));
 }
 
 async function post<T>(url: string, body: unknown): Promise<T> {
@@ -53,7 +69,5 @@ async function post<T>(url: string, body: unknown): Promise<T> {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data?.error ?? `Request failed (${res.status})`);
-  return data as T;
+  return read<T>(res);
 }
