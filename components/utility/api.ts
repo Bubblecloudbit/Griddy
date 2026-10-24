@@ -1,14 +1,29 @@
 // components/utility/api.ts — the only place the AEP view talks to the backend (owner: C)
-// Routes are owned by A. While they are stubs they return lib/mock.ts data,
-// so this file does not change when the real engine lands.
+// Routes are owned by A (real engine since v1 integration).
 import type { FlexEvent, Forecast } from "@/lib/types";
 
 export type Scope = string; // a neighborhood id ("n1") or "region"
 
 export async function fetchForecast(scope: Scope, coordinated = true): Promise<Forecast> {
   const res = await fetch(`/api/forecast?scope=${scope}&coordinated=${coordinated}`);
-  if (!res.ok) throw new Error(`Forecast request failed (${res.status})`);
+  if (!res.ok) throw new ApiError(res.status, await errorMessage(res));
   return res.json();
+}
+
+// API errors come back as { error } (PLAN.md §7). 403 = fewer than 5 homes (privacy).
+export class ApiError extends Error {
+  constructor(public status: number, message: string) {
+    super(message);
+  }
+}
+
+async function errorMessage(res: Response): Promise<string> {
+  try {
+    const body = await res.json();
+    return body.error ?? `Request failed (${res.status})`;
+  } catch {
+    return `Request failed (${res.status})`;
+  }
 }
 
 export async function fetchEvents(): Promise<FlexEvent[]> {

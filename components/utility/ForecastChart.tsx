@@ -14,9 +14,9 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import type { FlexEvent, Forecast } from "@/lib/types";
-import { axisTick, fullHourLabel } from "./hours";
+import { LAST_HOUR, axisTick, fullHourLabel } from "./hours";
 
-const TICKS = [0, 6, 12, 18, 24, 30, 36, 42, 47];
+const TICKS = Array.from({ length: Math.floor(LAST_HOUR / 6) + 1 }, (_, i) => i * 6); // every 6 h across the horizon
 
 function toRows(forecast: Forecast) {
   return forecast.baselineKW.map((b, hour) => ({
@@ -40,7 +40,7 @@ export function ForecastChart({ forecast, events = [] }: Props) {
           <XAxis
             dataKey="hour"
             type="number"
-            domain={[0, 47]}
+            domain={[0, LAST_HOUR]}
             ticks={TICKS}
             tickFormatter={axisTick}
             tick={{ fontSize: 11 }}

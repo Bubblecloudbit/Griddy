@@ -1,47 +1,47 @@
-// app/utility/page.tsx — AEP dashboard (owner: C)
-// Neighborhood/region forecast with transformer limit, region reference (real grid data),
-// Flex Event creator, and trust panel. Coordination toggle + EV slider are P2 (not built).
+// app/utility/page.tsx — AEP dashboard Overview (owner: C)
+// Shell (app switcher, sidebar, top bar) comes from app/utility/layout.tsx (C3).
+// The cards below are the v1 versions; C4–C6 replace them with the KPI strip,
+// projected load chart, and zone context card from DESIGN.md §6.1.
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Nav } from "@/components/ui/Nav";
+import { Card, EmptyState, Tag } from "@/components/ui";
 import { ForecastChart } from "@/components/utility/ForecastChart";
 import { ForecastStatsRow } from "@/components/utility/ForecastStatsRow";
 import { RegionReferenceChart } from "@/components/utility/RegionReferenceChart";
-import { ScopeSwitch, type ScopeOption } from "@/components/utility/ScopeSwitch";
+import { AreaPicker, areaName } from "@/components/utility/AreaPicker";
 import { FlexEventPanel } from "@/components/utility/FlexEventPanel";
 import { TrustPanel } from "@/components/utility/TrustPanel";
-import { fetchEvents, fetchForecast, type Scope } from "@/components/utility/api";
+import { ApiError, fetchEvents, fetchForecast, type Scope } from "@/components/utility/api";
 import { getRegionReference } from "@/lib/realdata";
-import { MOCK_NEIGHBORHOODS } from "@/lib/mock";
 import type { FlexEvent, Forecast } from "@/lib/types";
 
-const MIN_HOMES = 5; // honesty rule: never show groups smaller than this
+const MIN_HOMES = 5; // privacy rule: never show groups smaller than this
+const PRIVACY_MESSAGE = "Hidden for privacy (fewer than 5 homes).";
 
-// TODO (C, after integration): if A adds a neighborhoods endpoint, load names from it.
-const SCOPES: ScopeOption[] = [
-  ...MOCK_NEIGHBORHOODS.map((n) => ({ id: n.id, name: n.name })),
-  { id: "region", name: "Whole region" },
-];
+type ForecastState =
+  | { status: "loading" }
+  | { status: "ok"; forecast: Forecast }
+  | { status: "hidden" } // API returned 403
+  | { status: "error"; message: string };
 
-function scopeName(scope: Scope): string {
-  return SCOPES.find((s) => s.id === scope)?.name ?? scope;
-}
-
-function useForecast(scope: Scope) {
-  const [forecast, setForecast] = useState<Forecast | null>(null);
-  const [error, setError] = useState<string | null>(null);
+function useForecast(scope: Scope): ForecastState {
+  const [state, setState] = useState<ForecastState>({ status: "loading" });
   useEffect(() => {
     let cancelled = false;
-    setError(null);
+    setState({ status: "loading" });
     fetchForecast(scope)
-      .then((f) => !cancelled && setForecast(f))
-      .catch((e: Error) => !cancelled && setError(e.message));
+      .then((forecast) => !cancelled && setState({ status: "ok", forecast }))
+      .catch((e: Error) => {
+        if (cancelled) return;
+        const hidden = e instanceof ApiError && e.status === 403;
+        setState(hidden ? { status: "hidden" } : { status: "error", message: e.message });
+      });
     return () => {
       cancelled = true;
     };
   }, [scope]);
-  return { forecast, error };
+  return state;
 }
 
 function useEvents() {
@@ -53,66 +53,52 @@ function useEvents() {
   return { events, reload };
 }
 
-function ForecastCard({ scope, forecast, events }: { scope: Scope; forecast: Forecast; events: FlexEvent[] }) {
-  const canDisplay = forecast.homeCount >= MIN_HOMES;
+function ForecastBody({ state, events }: { state: ForecastState; events: FlexEvent[] }) {
+  if (state.status === "loading") return <div className="h-80 animate-pulse rounded-control bg-paper" />;
+  if (state.status === "error") return <p className="text-body text-danger">{state.message}</p>;
+  if (state.status === "hidden" || state.forecast.homeCount < MIN_HOMES) return <EmptyState message={PRIVACY_MESSAGE} />;
   return (
-    <section className="rounded-lg border border-slate-200 bg-white p-5">
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <h2 className="font-semibold text-slate-800">Forecast load: {scopeName(scope)}</h2>
-        <span className="rounded bg-slate-100 px-2 py-0.5 text-xs text-slate-600">
-          Aggregated view, {forecast.homeCount} homes · simulated
-        </span>
+    <>
+      <ForecastStatsRow forecast={state.forecast} />
+      <div className="mt-4">
+        <ForecastChart forecast={state.forecast} events={events} />
       </div>
-      {canDisplay ? (
-        <>
-          <ForecastStatsRow forecast={forecast} />
-          <div className="mt-4">
-            <ForecastChart forecast={forecast} events={events} />
-          </div>
-        </>
-      ) : (
-        <p className="py-12 text-center text-sm text-slate-400">
-          Fewer than {MIN_HOMES} homes in this group, so the aggregate is hidden for privacy.
-        </p>
-      )}
-    </section>
+    </>
   );
 }
 
-export default function UtilityPage() {
-  const [scope, setScope] = useState<Scope>("n1");
-  const { forecast, error } = useForecast(scope);
+export default function OverviewPage() {
+  const [scope, setScope] = useState<Scope>("region");
+  const forecast = useForecast(scope);
   const { events, reload } = useEvents();
   const reference = getRegionReference();
+  const homes = forecast.status === "ok" ? `${forecast.forecast.homeCount} homes` : null;
 
   return (
-    <main className="bg-slate-50 pb-12">
-      <Nav />
-      <div className="mx-auto max-w-5xl space-y-6 px-6 py-8">
-        <header className="flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900">AEP Grid View</h1>
-            <p className="mt-1 text-sm text-slate-500">
-              Committed customer plans turned into a 48-hour load forecast. Community data is{" "}
-              <span className="font-medium text-amber-700">simulated</span>.
-            </p>
-          </div>
-          <ScopeSwitch options={SCOPES} value={scope} onChange={setScope} />
-        </header>
+    <div className="space-y-6">
+      <header className="flex flex-wrap items-end justify-between gap-4">
+        <h1 className="text-h1">Overview</h1>
+        <AreaPicker value={scope} onChange={setScope} />
+      </header>
 
-        {error && <p className="rounded bg-red-50 px-4 py-2 text-sm text-red-700">{error}</p>}
-        {forecast && <ForecastCard scope={scope} forecast={forecast} events={events} />}
+      <Card
+        title={`Projected residential load · ${areaName(scope)}`}
+        explainer={`kW${homes ? `, ${homes} combined` : ""}. Baseline = everyone runs things when they get home. Planned = committed GridShift plans.`}
+        action={<Tag kind="SIMULATED" />}
+      >
+        <ForecastBody state={forecast} events={events} />
+      </Card>
 
-        {scope === "region" && (
-          <section className="rounded-lg border border-slate-200 bg-white p-5">
-            <h2 className="mb-3 font-semibold text-slate-800">Real grid context: AEP zone demand</h2>
-            <RegionReferenceChart reference={reference} />
-          </section>
-        )}
+      <Card
+        title="AEP zone context · PJM"
+        explainer="What AEP already forecasts for the whole zone, in MW. GridShift adds what customers plan to do."
+        action={<Tag kind="REAL" />}
+      >
+        <RegionReferenceChart reference={reference} />
+      </Card>
 
-        <FlexEventPanel events={events} onCreated={reload} />
-        <TrustPanel />
-      </div>
-    </main>
+      <FlexEventPanel events={events} onCreated={reload} />
+      <TrustPanel />
+    </div>
   );
 }
