@@ -1,6 +1,6 @@
 // components/customer/client.ts — the customer app's only door to the backend (owner: B)
 // All calls go to A's real engine (/api/optimize, /api/plan, /api/rates).
-import type { FlexTask, LoadFlag, RatePlan, ScheduledTask } from "@/lib/types";
+import type { FlexTask, LoadFlag, RatePlan, ScheduledTask, Trip, WeeklyRoutine } from "@/lib/types";
 
 export const HOUSEHOLD_ID = "h-jordan";
 export const NEIGHBORHOOD_ID = "n1";
@@ -22,14 +22,17 @@ export async function getRates(): Promise<RatePlan> {
   return get<RatePlan>("/api/rates");
 }
 
-// Returns the household's new GridPoints total (not the points earned).
-export async function commitPlan(tasks: FlexTask[], flags: LoadFlag[]): Promise<number> {
-  const data = await post<{ points: number }>("/api/plan", {
-    householdId: HOUSEHOLD_ID,
-    tasks,
-    flags,
-  });
-  return data.points;
+export interface PlanCommit {
+  tasks: FlexTask[];
+  flags?: LoadFlag[];
+  trips?: Trip[];
+  routine?: WeeklyRoutine;
+  eventIds?: string[];
+}
+
+// points = the household's new total; earned = this commit's points, incl. any Flex Event bonus.
+export async function commitPlan(plan: PlanCommit): Promise<{ points: number; earned: number }> {
+  return post<{ points: number; earned: number }>("/api/plan", { householdId: HOUSEHOLD_ID, flags: [], ...plan });
 }
 
 async function get<T>(url: string): Promise<T> {

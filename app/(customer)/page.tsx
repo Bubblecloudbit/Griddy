@@ -3,7 +3,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { FlexTask, RatePlan, ScheduledTask, WeeklyRoutine } from "@/lib/types";
+import type { FlexTask, RatePlan, ScheduledTask, Trip, WeeklyRoutine } from "@/lib/types";
 import { Card, Nav, useToast } from "@/components/ui";
 import { MOCK_HOUSEHOLD, MOCK_ROUTINE } from "@/lib/mock";
 import { optimize, commitPlan, getRates } from "@/components/customer/client";
@@ -11,6 +11,7 @@ import { AppShell, type Tab } from "@/components/customer/AppShell";
 import { DayRibbon } from "@/components/customer/DayRibbon";
 import { BestTime, PlanStats } from "@/components/customer/TodaySummary";
 import { PlanTab } from "@/components/customer/PlanTab";
+import { WeekTab } from "@/components/customer/WeekTab";
 
 function Placeholder({ title, text }: { title: string; text: string }) {
   return <Card title={title} explainer={text} />;
@@ -20,8 +21,9 @@ export default function CustomerPage() {
   const [tab, setTab] = useState<Tab>("today");
   const [rate, setRate] = useState<RatePlan | null>(null);
   const [rateError, setRateError] = useState<string | null>(null);
-  // Demo story (PLAN.md §3): early shift, car plugged in at 4 PM. Week tab (B6) edits this.
-  const [routine] = useState<WeeklyRoutine>(MOCK_ROUTINE);
+  // Demo story (PLAN.md §3): early shift, car plugged in at 4 PM.
+  const [routine, setRoutine] = useState<WeeklyRoutine>(MOCK_ROUTINE);
+  const [trips, setTrips] = useState<Trip[]>([]);
   const [tasks, setTasks] = useState<FlexTask[]>([]);
   const [schedule, setSchedule] = useState<ScheduledTask[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -60,8 +62,8 @@ export default function CustomerPage() {
   async function runCommit() {
     setBusy(true);
     try {
-      const total = await commitPlan(tasks, []);
-      showToast(`Plan committed · +${total - points} GridPoints`);
+      const { points: total, earned } = await commitPlan({ tasks, trips, routine });
+      showToast(`Plan committed · +${earned} GridPoints`);
       setPoints(total);
       setCommitted(true);
     } catch (e) {
@@ -104,7 +106,18 @@ export default function CustomerPage() {
         )}
 
         {tab === "week" && (
-          <Placeholder title="Your week" text="Routine and trips will show here." />
+          <WeekTab
+            routine={routine}
+            trips={trips}
+            onRoutineChange={(r) => {
+              setRoutine(r);
+              setCommitted(false);
+            }}
+            onTripsChange={(t) => {
+              setTrips(t);
+              setCommitted(false);
+            }}
+          />
         )}
 
         {tab === "rewards" && (
