@@ -8,7 +8,7 @@ import { usePolling } from "./usePolling";
 
 function Skeleton() {
   return (
-    <div className="grid grid-cols-2 gap-3 lg:grid-cols-4" aria-label="Loading KPIs">
+    <div className="grid grid-cols-2 gap-3 xl:grid-cols-4" aria-label="Loading KPIs">
       {[0, 1, 2, 3].map((i) => (
         <div key={i} className="h-[116px] animate-pulse rounded-card border border-line bg-surface" />
       ))}
@@ -25,7 +25,7 @@ export function KpiStrip() {
 
   const lessPeak = data.peakReductionPct < 0;
   return (
-    <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+    <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
       <Stat
         label="Enrolled homes"
         value={<AnimatedNumber value={data.enrolledHomes} format={formatInt} />}
