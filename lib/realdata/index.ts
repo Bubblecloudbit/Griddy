@@ -7,9 +7,11 @@
 import type { RegionReference } from "@/lib/types";
 import { MOCK_REGION_REFERENCE } from "@/lib/mock";
 // To use a snapshot made by scripts/convert.mjs, import it and set SNAPSHOT to it:
-// import snapshot from "@/data/real/pjm-aep-2024-10-15.json";
+// import snapshot from "@/data/real/pjm_aep_forecast_7d.json";
 
 const SNAPSHOT: unknown = null; // e.g. `= snapshot;`
+
+const MAX_HOURS = 7 * 24; // the PJM 7-day forecast (DATA.md §2)
 
 const isNumberArray = (v: unknown): v is number[] =>
   Array.isArray(v) && v.every((x) => typeof x === "number" && Number.isFinite(x));
@@ -17,12 +19,15 @@ const isNumberArray = (v: unknown): v is number[] =>
 // Catches a bad snapshot in dev instead of letting the chart render garbage.
 function checkSnapshot(data: unknown): RegionReference {
   const ref = data as RegionReference;
-  const hours = ref?.demandMW?.length;
+  const hours = ref?.demandMW?.length ?? 0;
   const problems = [
     typeof ref?.label !== "string" && "label",
     typeof ref?.source !== "string" && "source",
     typeof ref?.date !== "string" && "date",
-    (!isNumberArray(ref?.demandMW) || (hours !== 24 && hours !== 48)) && "demandMW (24 or 48 numbers)",
+    (!isNumberArray(ref?.demandMW) || hours < 24 || hours > MAX_HOURS) && `demandMW (24–${MAX_HOURS} numbers)`,
+    ref?.hours !== undefined &&
+      (!Array.isArray(ref.hours) || ref.hours.length !== hours || !ref.hours.every((t) => typeof t === "string")) &&
+      "hours (one ISO timestamp per demandMW value)",
     ref?.forecastMW !== undefined && (!isNumberArray(ref.forecastMW) || ref.forecastMW.length !== hours) && "forecastMW",
     ref?.priceUSDperMWh !== undefined &&
       (!isNumberArray(ref.priceUSDperMWh) || ref.priceUSDperMWh.length !== hours) &&
