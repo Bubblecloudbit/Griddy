@@ -183,7 +183,7 @@ interface RegionReference { label: string; source: string; date: string; demandM
 ## 13. Status (owners update their row when they push)
 | Person | Done | Next |
 |---|---|---|
-| **A** | **A1 v2 contract:** v2 types, `lib/config.ts` (demo clock, `dayLabel`, `hourLabel`, `isWeekend`), 72 h horizon, 12 areas × 40 homes live in the API, v2 mocks (`MOCK_SUMMARY`, `mockHeatmap`, `MOCK_TRIP`, `MOCK_ROUTINE`, …), stub `/api/rates` `/api/summary` `/api/heatmap`, `/api/simulate` deleted, `lucide-react` 1.54.0. **A2:** real `/api/rates` (2–6 PM weekdays, AEP Ohio source; prices illustrative); `isPeak` skips weekends. | A3–A6 |
+| **A** | **A1 v2 contract:** v2 types, `lib/config.ts` (demo clock, `dayLabel`, `hourLabel`, `isWeekend`), 72 h horizon, 12 areas × 40 homes live in the API, v2 mocks (`MOCK_SUMMARY`, `mockHeatmap`, `MOCK_TRIP`, `MOCK_ROUTINE`, …), stub `/api/rates` `/api/summary` `/api/heatmap`, `/api/simulate` deleted, `lucide-react` 1.54.0. **A2:** real `/api/rates` (2–6 PM weekdays, AEP Ohio source; prices illustrative); `isPeak` skips weekends. **A3:** 480 homes with routines (`ROUTINE_PRESETS` in `@/lib/routines`, browser-safe for B's Week tab), Monday tasks, ~60% enrolled, ~12% Thu–Sat trips; only enrolled homes are optimized; commit enrolls. Region Mon 2–6 PM: −28% (simulated). | A4–A6 |
 | **B** | — | BUILD.md §B |
 | **C** | — | BUILD.md §C (tokens first) |
 | **D** | — | BUILD.md §D (DATA.md pulls first) |
