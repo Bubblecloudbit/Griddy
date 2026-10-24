@@ -1,7 +1,8 @@
-// lib/ai/coach.ts — STUB (owner: D, P1)
-// Natural-language energy coach. MUST have a rule-based fallback so the demo
-// never depends on an API key. Real implementation lands in P1.
+// lib/ai/coach.ts — Natural-language energy coach (owner: D)
+// Turns a message like "charge my car by 7 AM" into FlexTasks and LoadFlags.
+// The rule-based coach in lib/ai/rules.ts is the default and needs no API key.
 import type { FlexTask, LoadFlag } from "@/lib/types";
+import { ruleBasedCoach } from "@/lib/ai/rules";
 
 export interface CoachResult {
   reply: string;
@@ -10,9 +11,7 @@ export interface CoachResult {
 }
 
 export async function coach(message: string): Promise<CoachResult> {
-  // TODO (D): call the Claude API with tool calling into the optimizer,
-  // and fall back to keyword rules when no key is set or a call fails.
-  return {
-    reply: `Coach stub received: "${message}". Rule-based fallback + Claude land in P1.`,
-  };
+  // TODO (D, P1): optional Claude layer. Use it only when ANTHROPIC_API_KEY is set,
+  // and fall back to ruleBasedCoach if the call fails.
+  return ruleBasedCoach(message);
 }
