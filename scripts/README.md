@@ -22,7 +22,7 @@ Pass the same file to `--demand` and `--forecast`, with `--area PJM`.
 ## 2. Convert
 
 ```
-node scripts/convert.mjs --forecast data/raw/load_frcstd_7_day.csv --date 2026-10-25 --area AEP --out data/real/pjm_aep_forecast_7d.json
+node scripts/convert.mjs --forecast data/raw/load_frcstd_7_day.csv --date 2026-10-25 --days 6 --area AEP --retrieved 2026-10-24 --source "PJM Data Miner 2 · Seven-Day Load Forecast" --label "AEP zone · PJM load forecast, Sun Oct 25 – Fri Oct 30" --out data/real/pjm_aep_forecast_7d.json
 node scripts/convert.mjs --demand data/raw/hrl_load_metered.csv --date 2026-10-17 --area AEP --out data/real/pjm_aep_load_week.json
 ```
 
