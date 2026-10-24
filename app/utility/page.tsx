@@ -1,7 +1,7 @@
 // app/utility/page.tsx — AEP dashboard Overview (owner: C)
 // Shell (app switcher, sidebar, top bar) comes from app/utility/layout.tsx (C3).
-// The cards below are the v1 versions; C4–C6 replace them with the KPI strip,
-// projected load chart, and zone context card from DESIGN.md §6.1.
+// KPI strip is C4. The cards below are v1 versions; C5–C6 replace them with the
+// projected load chart and zone context card from DESIGN.md §6.1.
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
@@ -10,6 +10,7 @@ import { ForecastChart } from "@/components/utility/ForecastChart";
 import { ForecastStatsRow } from "@/components/utility/ForecastStatsRow";
 import { RegionReferenceChart } from "@/components/utility/RegionReferenceChart";
 import { AreaPicker, areaName } from "@/components/utility/AreaPicker";
+import { KpiStrip } from "@/components/utility/KpiStrip";
 import { FlexEventPanel } from "@/components/utility/FlexEventPanel";
 import { TrustPanel } from "@/components/utility/TrustPanel";
 import { ApiError, fetchEvents, fetchForecast, type Scope } from "@/components/utility/api";
@@ -80,6 +81,8 @@ export default function OverviewPage() {
         <h1 className="text-h1">Overview</h1>
         <AreaPicker value={scope} onChange={setScope} />
       </header>
+
+      <KpiStrip />
 
       <Card
         title={`Projected residential load · ${areaName(scope)}`}
