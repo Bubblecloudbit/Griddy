@@ -1,11 +1,10 @@
 // components/ui/EmptyState.tsx — small line icon, one sentence, one action (DESIGN.md §3, owner: C)
-import type { ComponentType } from "react";
-import { Inbox } from "lucide-react";
+import { Inbox, type LucideIcon } from "lucide-react";
 import { Button } from "./Button";
 
 interface Props {
   message: string;
-  icon?: ComponentType<{ size?: number; strokeWidth?: number }>;
+  icon?: LucideIcon;
   actionLabel?: string;
   onAction?: () => void;
 }
