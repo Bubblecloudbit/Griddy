@@ -42,6 +42,10 @@ export function getHousehold(id: string): Household | undefined {
   return state().households.get(id);
 }
 
+export function listHouseholds(): Household[] {
+  return Array.from(state().households.values());
+}
+
 export function householdsIn(neighborhoodId: string): Household[] {
   const n = getNeighborhood(neighborhoodId);
   return n ? n.homeIds.map((id) => state().households.get(id)!) : [];

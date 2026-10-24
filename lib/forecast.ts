@@ -4,11 +4,15 @@
 //              at plug-in, plus away/high-load flags.
 // Only aggregates leave this file; the utility view never sees a single home.
 import type { Forecast, Household, LoadFlag, Neighborhood } from "@/lib/types";
-import { DEFAULT_RATE, HORIZON_HOURS } from "@/lib/rates";
+import { DEFAULT_RATE, HORIZON_HOURS, isPeak } from "@/lib/rates";
+import { PLAN_DAY } from "@/lib/config";
 import { addTaskLoad, COORDINATED_LAMBDA, optimize } from "@/lib/optimizer";
 import { householdsIn, listNeighborhoods } from "@/lib/store";
 
 export const MIN_GROUP_SIZE = 5; // privacy rule: never show fewer homes than this
+
+// Peak hours of the plan day (Mon Oct 26, 2–6 PM = hours 38–41). Every "peak-hour" number uses these.
+export const PLAN_DAY_PEAK_HOURS = Array.from({ length: 24 }, (_, c) => PLAN_DAY * 24 + c).filter((h) => isPeak(DEFAULT_RATE, h));
 
 function zeros(): number[] {
   return new Array(HORIZON_HOURS).fill(0);
@@ -16,6 +20,15 @@ function zeros(): number[] {
 
 function round2(arr: number[]): number[] {
   return arr.map((v) => Math.round(v * 100) / 100);
+}
+
+// kWh in the plan day's peak window. Hourly kW over 1-hour slots = kWh.
+function peakKWh(curve: number[]): number {
+  return Math.round(PLAN_DAY_PEAK_HOURS.reduce((sum, h) => sum + curve[h], 0) * 10) / 10;
+}
+
+function withPeakTotals(f: Omit<Forecast, "peakKWhBaseline" | "peakKWhPlanned">): Forecast {
+  return { ...f, peakKWhBaseline: peakKWh(f.baselineKW), peakKWhPlanned: peakKWh(f.plannedKW) };
 }
 
 function addInto(target: number[], source: number[]): void {
@@ -53,13 +66,13 @@ export function neighborhoodForecast(n: Neighborhood, coordinated: boolean): For
   const planned = [...fixedPlanned];
   for (const t of scheduled) addTaskLoad(planned, t, t.start);
 
-  return {
+  return withPeakTotals({
     neighborhoodId: n.id,
     baselineKW: round2(baseline),
     plannedKW: round2(planned),
     capacityKW: n.transformerCapacityKW,
     homeCount: homes.length,
-  };
+  });
 }
 
 export function regionForecast(coordinated: boolean): Forecast {
@@ -70,11 +83,11 @@ export function regionForecast(coordinated: boolean): Forecast {
     addInto(baseline, p.baselineKW);
     addInto(planned, p.plannedKW);
   }
-  return {
+  return withPeakTotals({
     neighborhoodId: "region",
     baselineKW: round2(baseline),
     plannedKW: round2(planned),
     capacityKW: parts.reduce((sum, p) => sum + p.capacityKW, 0),
     homeCount: parts.reduce((sum, p) => sum + p.homeCount, 0),
-  };
+  });
 }
