@@ -20,8 +20,8 @@ export default function OverviewPage() {
       <h1 className="text-h1">Overview</h1>
       <KpiStrip />
       <ProjectedLoadChart scope={scope} onScopeChange={setScope} />
-      <div className="grid gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-2">
+      <div className="grid gap-6 xl:grid-cols-3">
+        <div className="xl:col-span-2">
           <ZoneContextChart />
         </div>
         <NextEventCard />
