@@ -29,6 +29,11 @@ export const APPLIANCE_CHIPS: { kind: Appliance; label: string }[] = [
   { kind: "other", label: "Other" },
 ];
 
+// Our sentence-case label for a task, whoever created it ("EV Charging" from the coach → "EV charging").
+export function taskLabel(task: FlexTask): string {
+  return task.appliance && task.appliance !== "other" ? PRESETS[task.appliance].label : task.label;
+}
+
 // A new task on the plan day, starting at the routine's plug-in hour (clock hour, e.g. 16).
 export function newTask(kind: Appliance, plugInHour: number): FlexTask {
   const p = PRESETS[kind];
