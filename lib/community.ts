@@ -1,14 +1,18 @@
 // lib/community.ts — seeded synthetic community (owner: A)
-// ~120 simulated homes in 3 neighborhoods. Same seed → same data. See design.md §3.
-// Every profile here is simulated, not real customer data.
-import type { FlexTask, Household, Neighborhood } from "@/lib/types";
-import { HORIZON_HOURS } from "@/lib/rates";
+// 12 service areas × 40 homes = 480, all simulated. Same seed → same data. See BUILD.md A3.
+// Flexible tasks sit on Monday Oct 26 (hours 24–47, "tomorrow" on every chart).
+import type { FlexTask, Household, Neighborhood, Trip, WeeklyRoutine } from "@/lib/types";
+import { HORIZON_HOURS } from "@/lib/config";
+import { ROUTINE_PRESETS, isAwayAt } from "@/lib/routines";
 
 export const DEFAULT_SEED = 42;
 export const DEFAULT_EV_ADOPTION = 0.35; // fraction of homes with an EV to charge
 export const DEMO_HOUSEHOLD_ID = "h-jordan"; // the customer-app demo home, in n1
 
-const TRANSFORMER_CAPACITY_KW = 200; // ~40 homes × 5 kW peak
+const TRANSFORMER_CAPACITY_KW = 200; // internal normalizer for the optimizer; never displayed
+const ENROLLED_SHARE = 0.6; // homes already committing GridShift plans
+const TRIP_SHARE = 0.12; // homes with a seeded Thu–Sat trip
+const AWAY_FACTOR = 0.5; // an empty home still draws fridge, HVAC, standby
 
 // 12 synthetic service areas × 40 homes = 480. Shown in the UI as "service areas".
 const AREA_NAMES = [
@@ -25,6 +29,12 @@ const DAILY_SHAPE_KW = [
   0.6, 0.5, 0.5, 0.5, 0.5, 0.6, 0.9, 1.4, 1.5, 1.1, 1.0, 1.0,
   1.0, 1.0, 1.0, 1.1, 1.3, 1.8, 2.2, 2.3, 2.2, 1.9, 1.4, 0.9,
 ];
+
+const MONDAY = 24; // first hour of Mon Oct 26
+const EV_READY_BY = 55; // Tue 7 AM
+const LAST_HOUR = HORIZON_HOURS; // deadlines are exclusive, so 72 = end of Tuesday
+
+const SEEDED_TRIP: Omit<Trip, "id"> = { label: "Trip", startDate: "2026-10-29", endDate: "2026-10-31" }; // Thu–Sat
 
 // mulberry32: tiny seeded PRNG returning floats in [0, 1).
 function mulberry32(seed: number): () => number {
@@ -48,30 +58,43 @@ function round2(x: number): number {
   return Math.round(x * 100) / 100;
 }
 
-function makeBaseline(rng: Rng): number[] {
+function clamp(x: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, x));
+}
+
+// ≈30% early shift, 35% commuter, 25% home all day, 10% night shift.
+function pickRoutine(rng: Rng): WeeklyRoutine {
+  const r = rng();
+  const preset = r < 0.3 ? "early_shift" : r < 0.65 ? "commuter" : r < 0.9 ? "home_all_day" : "night_shift";
+  return ROUTINE_PRESETS[preset].routine;
+}
+
+function makeBaseline(rng: Rng, routine: WeeklyRoutine): number[] {
   const homeSize = 0.7 + rng() * 0.6; // 0.7×–1.3× the average home
   return Array.from({ length: HORIZON_HOURS }, (_, h) => {
     const noise = 0.9 + rng() * 0.2; // ±10% hour to hour
-    return round2(DAILY_SHAPE_KW[h % 24] * homeSize * noise);
+    const away = isAwayAt(routine, h) ? AWAY_FACTOR : 1;
+    return round2(DAILY_SHAPE_KW[h % 24] * homeSize * noise * away);
   });
 }
 
-// Flexible appliances, sampled per home. Times use hour 0 = midnight today.
-function makeTasks(rng: Rng, homeId: string, evAdoption: number): FlexTask[] {
+// Monday's flexible appliances. Plug-in is drawn around the routine's plug-in hour and kept
+// in Mon 2–8 PM (h38–44), so a real share of "run it when I get home" load lands in the peak.
+function makeTasks(rng: Rng, homeId: string, routine: WeeklyRoutine, evAdoption: number): FlexTask[] {
+  const plugIn = clamp(MONDAY + routine.plugInHour + randInt(rng, -1, 2), 38, 44);
   const tasks: FlexTask[] = [];
   if (rng() < evAdoption) {
-    // Plug in 5–8 PM, full by 7 AM tomorrow (hour 31).
-    tasks.push({ id: `${homeId}-ev`, label: "EV Charging", kWh: randInt(rng, 6, 14), powerKW: 7.2, earliestStart: randInt(rng, 17, 20), deadline: 31 });
+    tasks.push({ id: `${homeId}-ev`, label: "EV charging", appliance: "ev", kWh: randInt(rng, 6, 14), powerKW: 7.2, earliestStart: plugIn, deadline: EV_READY_BY });
   }
   if (rng() < 0.5) {
-    const start = randInt(rng, 8, 19);
-    tasks.push({ id: `${homeId}-dryer`, label: "Dryer", kWh: 1.5, powerKW: 3, earliestStart: start, deadline: start + randInt(rng, 6, 12) });
+    const start = plugIn + randInt(rng, 0, 1);
+    tasks.push({ id: `${homeId}-dryer`, label: "Dryer", appliance: "dryer", kWh: 1.5, powerKW: 3, earliestStart: start, deadline: Math.min(LAST_HOUR, start + randInt(rng, 6, 12)) });
   }
   if (rng() < 0.6) {
-    tasks.push({ id: `${homeId}-dish`, label: "Dishwasher", kWh: 1.2, powerKW: 1.5, earliestStart: randInt(rng, 19, 21), deadline: 31 });
+    tasks.push({ id: `${homeId}-dish`, label: "Dishwasher", appliance: "dishwasher", kWh: 1.2, powerKW: 1.5, earliestStart: plugIn + randInt(rng, 0, 3), deadline: EV_READY_BY });
   }
   if (rng() < 0.3) {
-    tasks.push({ id: `${homeId}-water`, label: "Water Heater", kWh: 2, powerKW: 4.5, earliestStart: 22, deadline: 30 });
+    tasks.push({ id: `${homeId}-water`, label: "Water heater", appliance: "water_heater", kWh: 2, powerKW: 4.5, earliestStart: plugIn, deadline: plugIn + randInt(rng, 4, 8) });
   }
   return tasks;
 }
@@ -89,19 +112,22 @@ export function generateCommunity(
     for (let i = 0; i < n.homes; i++) {
       const isDemoHome = n.id === "n1" && i === 0;
       const id = isDemoHome ? DEMO_HOUSEHOLD_ID : `h-${n.id}-${i}`;
-      const baselineKW = makeBaseline(rng);
-      const tasks = makeTasks(rng, id, evAdoption);
+      // Every home draws the same random values in the same order, so Jordan's
+      // overrides below never shift anyone else's data.
+      const drawn = pickRoutine(rng);
+      const routine = isDemoHome ? ROUTINE_PRESETS.early_shift.routine : drawn; // Jordan: early shift (demo story)
+      const baselineKW = makeBaseline(rng, routine);
+      const tasks = makeTasks(rng, id, routine, evAdoption);
+      const enrolled = rng() < ENROLLED_SHARE;
+      const trips: Trip[] = rng() < TRIP_SHARE ? [{ id: `${id}-trip`, ...SEEDED_TRIP }] : [];
       const points = randInt(rng, 0, 300);
       homeIds.push(id);
-      households.push({
-        id,
-        neighborhoodId: n.id,
-        baselineKW,
-        // Jordan starts with an empty plan; the demo adds tasks from the customer app.
-        tasks: isDemoHome ? [] : tasks,
-        flags: [],
-        points: isDemoHome ? 150 : points,
-      });
+      households.push(
+        isDemoHome
+          ? // Jordan starts with an empty plan and isn't enrolled; the demo does both live.
+            { id, neighborhoodId: n.id, baselineKW, tasks: [], flags: [], points: 150, enrolled: false, trips: [], routine, eventIds: [] }
+          : { id, neighborhoodId: n.id, baselineKW, tasks, flags: [], points: enrolled ? points : 0, enrolled, trips, routine, eventIds: [] },
+      );
     }
     neighborhoods.push({ id: n.id, name: n.name, transformerCapacityKW: TRANSFORMER_CAPACITY_KW, homeIds });
   }

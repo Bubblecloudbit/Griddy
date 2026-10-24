@@ -47,12 +47,14 @@ export function householdsIn(neighborhoodId: string): Household[] {
   return n ? n.homeIds.map((id) => state().households.get(id)!) : [];
 }
 
-// Replaces the household's plan and awards points. Returns the updated household.
+// Replaces the household's plan, enrolls it (its tasks get optimized in the forecast from
+// now on), and awards points. Returns the updated household.
 export function commitPlan(householdId: string, tasks: FlexTask[], flags: LoadFlag[]): Household | undefined {
   const household = getHousehold(householdId);
   if (!household) return undefined;
   household.tasks = tasks;
   household.flags = flags;
+  household.enrolled = true;
   household.points += COMMIT_POINTS;
   return household;
 }
