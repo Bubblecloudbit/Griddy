@@ -1,50 +1,19 @@
-// app/utility/page.tsx — AEP dashboard Overview (owner: C)
-// Shell (app switcher, sidebar, top bar) comes from app/utility/layout.tsx (C3).
-// KPI strip is C4. The cards below are v1 versions; C5–C6 replace them with the
-// projected load chart and zone context card from DESIGN.md §6.1.
+// app/utility/page.tsx — AEP dashboard Overview (DESIGN.md §6.1, owner: C)
+// Shell (app switcher, sidebar, top bar) comes from app/utility/layout.tsx.
+// KPI strip (C4) → projected load chart, "the proof" (C5) → zone context (C6) + next Flex Event.
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Card, EmptyState, Tag } from "@/components/ui";
-import { ForecastChart } from "@/components/utility/ForecastChart";
-import { ForecastStatsRow } from "@/components/utility/ForecastStatsRow";
-import { RegionReferenceChart } from "@/components/utility/RegionReferenceChart";
-import { AreaPicker, areaName } from "@/components/utility/AreaPicker";
 import { KpiStrip } from "@/components/utility/KpiStrip";
+import { ProjectedLoadChart } from "@/components/utility/ProjectedLoadChart";
+import { ZoneContextChart } from "@/components/utility/ZoneContextChart";
+import { NextEventCard } from "@/components/utility/NextEventCard";
 import { FlexEventPanel } from "@/components/utility/FlexEventPanel";
 import { TrustPanel } from "@/components/utility/TrustPanel";
-import { ApiError, fetchEvents, fetchForecast, type Scope } from "@/components/utility/api";
-import { getRegionReference } from "@/lib/realdata";
-import type { FlexEvent, Forecast } from "@/lib/types";
+import { fetchEvents, type Scope } from "@/components/utility/api";
+import type { FlexEvent } from "@/lib/types";
 
-const MIN_HOMES = 5; // privacy rule: never show groups smaller than this
-const PRIVACY_MESSAGE = "Hidden for privacy (fewer than 5 homes).";
-
-type ForecastState =
-  | { status: "loading" }
-  | { status: "ok"; forecast: Forecast }
-  | { status: "hidden" } // API returned 403
-  | { status: "error"; message: string };
-
-function useForecast(scope: Scope): ForecastState {
-  const [state, setState] = useState<ForecastState>({ status: "loading" });
-  useEffect(() => {
-    let cancelled = false;
-    setState({ status: "loading" });
-    fetchForecast(scope)
-      .then((forecast) => !cancelled && setState({ status: "ok", forecast }))
-      .catch((e: Error) => {
-        if (cancelled) return;
-        const hidden = e instanceof ApiError && e.status === 403;
-        setState(hidden ? { status: "hidden" } : { status: "error", message: e.message });
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [scope]);
-  return state;
-}
-
+// v1 Flex Event creator stays until A's /utility/events page lands (BUILD.md A10), then it goes.
 function useEvents() {
   const [events, setEvents] = useState<FlexEvent[]>([]);
   const reload = useCallback(() => {
@@ -54,52 +23,21 @@ function useEvents() {
   return { events, reload };
 }
 
-function ForecastBody({ state, events }: { state: ForecastState; events: FlexEvent[] }) {
-  if (state.status === "loading") return <div className="h-80 animate-pulse rounded-control bg-paper" />;
-  if (state.status === "error") return <p className="text-body text-danger">{state.message}</p>;
-  if (state.status === "hidden" || state.forecast.homeCount < MIN_HOMES) return <EmptyState message={PRIVACY_MESSAGE} />;
-  return (
-    <>
-      <ForecastStatsRow forecast={state.forecast} />
-      <div className="mt-4">
-        <ForecastChart forecast={state.forecast} events={events} />
-      </div>
-    </>
-  );
-}
-
 export default function OverviewPage() {
   const [scope, setScope] = useState<Scope>("region");
-  const forecast = useForecast(scope);
   const { events, reload } = useEvents();
-  const reference = getRegionReference();
-  const homes = forecast.status === "ok" ? `${forecast.forecast.homeCount} homes` : null;
 
   return (
     <div className="space-y-6">
-      <header className="flex flex-wrap items-end justify-between gap-4">
-        <h1 className="text-h1">Overview</h1>
-        <AreaPicker value={scope} onChange={setScope} />
-      </header>
-
+      <h1 className="text-h1">Overview</h1>
       <KpiStrip />
-
-      <Card
-        title={`Projected residential load · ${areaName(scope)}`}
-        explainer={`kW${homes ? `, ${homes} combined` : ""}. Baseline = everyone runs things when they get home. Planned = committed GridShift plans.`}
-        action={<Tag kind="SIMULATED" />}
-      >
-        <ForecastBody state={forecast} events={events} />
-      </Card>
-
-      <Card
-        title="AEP zone context · PJM"
-        explainer="What AEP already forecasts for the whole zone, in MW. GridShift adds what customers plan to do."
-        action={<Tag kind="REAL" />}
-      >
-        <RegionReferenceChart reference={reference} />
-      </Card>
-
+      <ProjectedLoadChart scope={scope} onScopeChange={setScope} />
+      <div className="grid gap-6 lg:grid-cols-3">
+        <div className="lg:col-span-2">
+          <ZoneContextChart />
+        </div>
+        <NextEventCard />
+      </div>
       <FlexEventPanel events={events} onCreated={reload} />
       <TrustPanel />
     </div>

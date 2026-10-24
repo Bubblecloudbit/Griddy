@@ -58,12 +58,13 @@ export function dayDividerProps(hour: number) {
 }
 
 // Direct label at the right end of a line, instead of a legend. Use inside <LabelList content={…} />.
-export function endLabel(text: string, color: string, lastIndex: number) {
+// `dy` nudges the label down (positive) or up (negative) when two lines end close together.
+export function endLabel(text: string, color: string, lastIndex: number, dy = 4) {
   // eslint-disable-next-line react/display-name
   return (props: { x?: number | string; y?: number | string; index?: number }) => {
     if (props.index !== lastIndex) return null;
     return (
-      <text x={Number(props.x) + 6} y={Number(props.y)} dy={4} fill={color} fontSize={11} fontWeight={600}>
+      <text x={Number(props.x) + 6} y={Number(props.y)} dy={dy} fill={color} fontSize={11} fontWeight={600}>
         {text}
       </text>
     );

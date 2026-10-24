@@ -20,7 +20,7 @@ export function KpiStrip() {
   const { data, error } = usePolling(fetchSummary);
 
   if (!data) {
-    return error ? <p className="text-body text-danger">{error}</p> : <Skeleton />;
+    return error ? <p className="text-body text-danger">{error.message}</p> : <Skeleton />;
   }
 
   const lessPeak = data.peakReductionPct < 0;
