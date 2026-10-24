@@ -204,7 +204,7 @@ A wide dashboard (max 1280 px). **Left sidebar:** GridShift for AEP · Overview 
 ┌─────────────────────────────────────────────────────────────────────┐
 │ Overview                                                            │
 │ ┌Enrolled homes┐┌Flexible load┐┌Peak-hour load┐┌Homes away this wk┐ │
-│ │ 480          ││ 1.9 MWh     ││ −18%         ││ 57                │ │
+│ │ 288          ││ 1,900 kWh   ││ −18%         ││ 57                │ │
 │ │ SIMULATED    ││ committed   ││ vs. baseline ││ from trips        │ │
 │ └──────────────┘└─────────────┘└──────────────┘└───────────────────┘ │
 │                                                                     │
@@ -261,7 +261,7 @@ One readable page (max 720 px) linked from both apps:
 
 ## 8. Copy guide
 - Sentence case everywhere. Times as "6 PM," "11 PM–4 AM," days as "Mon Oct 26."
-- Money: `$4.80`. Energy: `18 kWh`, `1.9 MWh`. Percent: `−18%` (true minus sign).
+- Money: `$4.80`. Energy: `18 kWh`, `1,900 kWh` (our community always stays in kW/kWh; MW/MWh only for PJM/EIA, so the units themselves tell real from simulated). Percent: `−18%` (true minus sign).
 - Buttons are verbs: "Find best times," "Commit plan," "Create event," "Join."
 - Every chart explainer answers "what am I looking at?" in one sentence.
 - Never say "AI-powered." The coach is just "Tell GridShift what you need."

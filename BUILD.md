@@ -2,10 +2,54 @@
 
 > How to use this: find your section, paste your **kickoff prompt** into a fresh Claude Code session, then work the steps **in order**. Each step has a "done when" line. Tick it, commit, push, post one line in chat. Shapes are in PLAN.md §7; looks are in DESIGN.md; data is in DATA.md.
 
-## Shared kickoff (everyone, once, 4:00 PM)
-1. `git pull --rebase` → copy the v2 docs into the repo root (PLAN.md, DESIGN.md, DATA.md, BUILD.md, CLAUDE.md, AGENTS.md).
-2. Read PLAN.md §1–§5 (5 min). Look at DESIGN.md §5–§6 wireframes for your screens.
-3. Decide nothing new without updating PLAN.md.
+## Runbook (what to run, and when)
+
+### 1. Everyone, once (4:00 PM)
+```bash
+git pull --rebase
+npm install
+npm run dev          # open http://localhost:3000 and /utility once while Wi-Fi is good (fonts download on first load)
+```
+Then read PLAN.md §1–§5 (5 min) and the DESIGN.md §5–§6 wireframes for your screens. Open a fresh Claude Code session and paste **your kickoff prompt** (your section below). Decide nothing new without updating PLAN.md.
+
+### 2. Two pulls everyone waits for
+| When | Who posts | Everyone then runs |
+|---|---|---|
+| ~4:30 | A: "v2 contract pushed" (types, 72 h horizon, mocks, `lucide-react`) | `git pull --rebase && npm install` |
+| ~4:45 | C: "tokens pushed" (colors, fonts, `components/ui`) | `git pull --rebase` and switch to the shared components |
+
+### 3. The loop for every step
+```bash
+# Claude session: kickoff prompt the first time, then "Next: BUILD.md step B3" (clear the session between steps)
+npm run dev                       # open your page; compare with DESIGN.md and the step's "done when"
+git add -A
+git commit -m "b: day ribbon"     # <person letter>: <what>
+git pull --rebase                 # conflict? ask Claude "resolve this conflict, keep both sides' intent", rerun the app
+git push
+```
+Then post one line in chat ("B: day ribbon pushed") and update your row in PLAN.md §13.
+
+### 4. Schedule by person
+| Time | A | B | C | D |
+|---|---|---|---|---|
+| 4:00–4:30 | **A1** v2 contract | **B1** shell (plain Tailwind + DESIGN.md hex until tokens land) | **C1** tokens | **D1** AEP time-of-use windows |
+| 4:30–4:45 | **A2** rate plan | **B2** day ribbon (mocks) | **C2** `components/ui` | **D2** PJM 7-day forecast |
+| 4:45–6:00 | **A3–A6** community, optimizer, summary, heat map data | **B2–B4** ribbon, stats, appliance cards | **C3–C6** shell, KPIs, load chart, zone card | **D2–D3** real data, then **D4** coach |
+| 6:00–6:30 | Dinner | | | |
+| 6:30–7:30 | **A7** runs Checklist 1 → `demo-v1` | **B5** commit flow + fixes | Fixes from Checklist 1 | Real data in; coach demo sentence works |
+| 7:30–9:30 | **A8** trips/routines/events engine, **A10** Flex events page | **B6–B8** week, Flex banner, command bar | **C7–C8** heat maps A and B | **D4–D5** coach, `/methodology` |
+| 10:00–11:30 | **A9** demo reset, seed the demo scenario | **B9** rewards + polish | **C10** polish | **D6** demo script, rough video |
+| 3:00 AM | Feature freeze. Bug fixes only. | | | |
+
+### 5. Integration (A runs it at 6:30, and again before each tag)
+```bash
+git pull --rebase
+npm install
+npx tsc --noEmit                  # must pass
+npm run dev                       # then walk Checklist 1 at the bottom of this file
+git tag demo-v1 && git push --tags
+```
+If something breaks late: `git checkout demo-v1` and demo from the tag.
 
 ## Working rhythm
 - One Claude session per step; clear the session between steps.
@@ -29,6 +73,7 @@
 | A6 | **Heat map A (area × hour).** Rows = 12 areas, cols = Monday 12a–11p (hours 24–47). `metric=load` → planned kW; `metric=change` → (planned − baseline) / baseline in %. `null` for groups under 5 homes. | C's grid renders; Mon 2–6 PM cells are teal (negative) under `change`. |
 | A7 | **Integration (6:30).** Run Checklist 1 below. Fix or stub whatever blocks the demo. | `git tag demo-v1` |
 | A8 | **Phase 2 engine.** `/api/plan` accepts `trips`, `routine`, `eventIds` (joining multiplies that commit's points by the event's multiplier and increments `optedIn`). Heat map B (day × hour, Oct 25–31): days 0–1 (Sun, Mon) from the 72-hour forecast, days 2–6 projected from routines + trips (matches PLAN.md §6 and the `PROJECTED` tags in DESIGN.md §6.2) (traveling home → baseline × 0.35, no flexible tasks). | Adding a Thu–Sat trip for Jordan visibly adds to n1's cooler Thu–Sat cells. |
+| A10 | **Flex events page** (moved from C9). `app/utility/events/page.tsx` + `components/utility/events/` (A owns only these two paths in C's area). Form (day, start, end, multiplier chips 1.5× / 2× / 3×, message) with a live preview of the customer banner; list of events with opted-in homes. Built only from C's `components/ui` and tokens, per DESIGN.md §6.3. | Event created here appears on the customer app within 5 s. |
 | A9 | **Demo reset.** `POST /api/reset` (and a small hidden link on `/utility`) restores the exact seeded state by clearing `globalThis.__gridshiftStore`. | Two demo run-throughs in a row look identical. |
 
 **Why 72 hours (A1):** v1 used 0–47 (Sun–Mon). The demo's key moment, Monday 4 PM plug-in "ready by Tuesday 7 AM," needs hour 55, and Sunday has no peak, so the demo has to plan for Monday. `HORIZON_HOURS` is already used by `community`, `forecast`, `optimizer`, and `validate`, so it's one constant, but hardcoded `48`s in `lib/mock.ts` (`residentialBaseline`) must change too. Charts still show Monday (hours 24–47) as "tomorrow."
@@ -43,7 +88,7 @@
 
 | # | Step | Done when |
 |---|---|---|
-| B1 | **Shell.** Replace the placeholder table in `app/(customer)/page.tsx` (keep its commit call as a reference). Phone-width frame (max 420 px), header (wordmark, "Plan for Monday, Oct 26," points chip), bottom tabs Today · Plan · Week · Rewards. Use C's tokens; until they land, use plain Tailwind with the DESIGN.md hex values. | Tabs switch; looks like DESIGN.md §5. |
+| B1 | **Shell.** Replace the placeholder table in `app/(customer)/page.tsx` (keep its commit call as a reference). Phone-width frame (max 420 px), header (wordmark, "Plan for Monday, Oct 26," points chip), bottom tabs Today · Plan · Week · Rewards. Use C's tokens; until they land, use plain Tailwind with the DESIGN.md hex values. **v1 cleanup:** `components/customer/hours.ts` and `TaskForm.tsx` assume a 48 h horizon; import `HORIZON_HOURS` from `@/lib/rates` (72) and `isPeak` from the same file instead of hardcoding. | Tabs switch; looks like DESIGN.md §5. |
 | B2 | **Day ribbon (the centerpiece).** 24-cell grid for the selected day from `/api/rates` (mock first); peak cells amber, off-peak teal wash; "now" marker; day chips Sun–Tue; Sunday shows "No peak hours on weekends." Under it: `Peak 2–6 PM weekdays · AEP Ohio` + `REAL` tag + `SourceNote`, and "Prices are illustrative." | Hover/tap any hour shows time, tier, and illustrative price. |
 | B3 | **Headline + stats.** "Best time to run things: after 6 PM and overnight" (computed from the rate plan, not hardcoded). Two `Stat`s: "$X saved this week" `ILLUSTRATIVE`, "Y kWh moved out of peak." | Values come from the latest optimize result (0 before planning). |
 | B4 | **Plan tab: appliance cards.** Add chips → cards with energy, plug-in time, ready-by time (prefilled from routine/defaults). "Find best times" → `/api/optimize` → each card shows start/end, `OFF-PEAK` tag, savings, and the `reason` behind an `InfoTip`. Planned blocks appear under the Today ribbon. Total row at the bottom. | Jordan's EV (plug-in 4 PM, ready 7 AM) moves out of the peak with savings > 0. API errors show inline. |
@@ -64,14 +109,14 @@
 |---|---|---|
 | C1 | **Tokens (by 4:45, top priority, everyone waits on this).** Colors, heat map scales, IBM Plex Sans/Mono via `next/font`, tabular numbers, radii, spacing in `tailwind.config` + `globals.css`. | Push + post "tokens pushed." |
 | C2 | **`components/ui`.** `Card`, `Stat`, `Tag` (REAL, SIMULATED, ILLUSTRATIVE, PEAK, OFF-PEAK, PROJECTED), `SourceNote`, `InfoTip`, `ChartFrame` (with the shared Recharts axis/grid/tooltip styles), `Segmented`, `Button`, `Toast`, `EmptyState`. | A `/utility/kit` scratch page shows each one (delete before demo). |
-| C3 | **Dashboard shell.** Replace the placeholder `Nav` with a small app switcher ("Customer app · AEP dashboard · Methodology") styled per DESIGN.md. Left sidebar (Overview, Heat maps, Flex events, Methodology), top bar "Residential flexibility · Demo community (simulated) · Plan date Mon Oct 26." | Navigation works; looks like DESIGN.md §6. |
+| C3 | **Dashboard shell.** Replace the placeholder `Nav` with a small app switcher ("Customer app · AEP dashboard · Methodology") styled per DESIGN.md. Left sidebar (Overview, Heat maps, Flex events → `/utility/events` (built by A, step A10), Methodology), top bar "Residential flexibility · Demo community (simulated) · Plan date Mon Oct 26." **v1 cleanup:** list areas from `NEIGHBORHOODS` in `@/lib/community` (all 12), not `MOCK_NEIGHBORHOODS` (3); `components/utility/hours.ts` uses `HORIZON_HOURS` from `@/lib/rates` (72), not 48. | Navigation works; looks like DESIGN.md §6. |
 | C4 | **KPI strip** from `/api/summary` (mock first): enrolled homes, flexible load committed, peak-hour load %, homes away this week. Each with a tag. | Poll every 5 s; numbers animate on change (300 ms). |
 | C5 | **Projected load chart (the proof).** Rebuild `components/utility/ForecastChart.tsx`: **remove the transformer `ReferenceLine` and the boxed `Legend`**, slice hours 24–47 (Mon), baseline dashed gray vs. planned teal area, peak band 2–6 PM, direct line labels, area picker (All, n1–n12; 403 → "Hidden for privacy"). Callout: "Peak-hour load −X% (Y kWh moved)." | After Jordan commits, the callout changes within 5 s. |
 | C6 | **Zone context card.** `getRegionReference()` from `lib/realdata` → slate-blue line, MW, `REAL`, `SourceNote`, explainer from DESIGN.md §6.1. Separate from C5 (different units). | Shows D's real data with source and date (mock until D delivers). |
 | — | **Integration 6:30** (Checklist 1) | |
 | C7 | **Heat map A (area × hour).** CSS grid, 12 rows × 24 cols, Load/Change segmented control (default Change), diverging scale, peak columns outlined, hatched null cells, hover tooltip, legend, auto takeaway line ("Biggest shift: …"). | Matches DESIGN.md §6.2. |
 | C8 | **Heat map B (day × hour)** with the Area × hour / Day × hour switch; days 2–6 tagged `PROJECTED`; takeaway "Thu–Sat: −X% (planned trips)." | Jordan's trip visibly contributes after commit. |
-| C9 | **Flex events page.** Form (day, start, end, multiplier chips, message) with live banner preview; list with opted-in homes. | Event appears on the customer app within 5 s. |
+| ~~C9~~ | **Moved to A (step A10)** to balance load. C keeps the "Next Flex Event" card on Overview (DESIGN.md §6.1); the existing `FlexEventPanel.tsx` can be retired once A10 lands. | — |
 | C10 | **Polish.** Empty/loading states, number formats, responsive down to 1024 px, delete the kit page. | Copy pass against DESIGN.md §8. |
 
 ---
@@ -83,9 +128,9 @@
 | # | Step | Done when |
 |---|---|---|
 | D1 | **AEP time-of-use windows (by 4:30).** Verify on the AEP Ohio page; commit `data/real/aep_tou.json` (DATA.md §1); tell A, B, C. Optional 20-min tariff ¢/kWh check. | Posted in chat with the URL. |
-| D2 | **PJM 7-day AEP-zone forecast** (DATA.md §2) → `scripts/` converter → `data/real/pjm_aep_forecast_7d.json` → `lib/realdata/index.ts` returns it as `RegionReference`. | C's zone card shows real MW with source and date. |
+| D2 | **PJM 7-day AEP-zone forecast** (DATA.md §2) → `scripts/` converter → `data/real/pjm_aep_forecast_7d.json` → `lib/realdata/index.ts` returns it as `RegionReference`. **v1 cleanup:** `checkSnapshot` only accepts 24 or 48 hours and `convert.mjs` only `--days 1|2`; allow 168 hours (7 days) and check `hours.length === demandMW.length` instead. | C's zone card shows real MW with source and date. |
 | D3 | **PJM last-week metered load** (DATA.md §3), or EIA backup (§4) if PJM fights you past 30 min. | Second view on the zone card. |
-| D4 | **Coach** (`lib/ai/`, `app/api/coach/`). Rule-based parser first: appliances (EV/car/Tesla, dryer, dishwasher, water heater), "ready/full by <time>," "away/trip <day> to <day>," "home by <time>." Then optional Claude API call with tool output in the same shape, falling back on any error. Output must pass `/api/optimize` validation. | "Charge my car by 7 AM and I'm away Thursday to Saturday" → EV task + Thu–Sat trip, with no API key. |
+| D4 | **Coach** (`lib/ai/`, `app/api/coach/`). Rule-based parser first: appliances (EV/car/Tesla, dryer, dishwasher, water heater), "ready/full by <time>," "away/trip <day> to <day>," "home by <time>." Then optional Claude API call with tool output in the same shape, falling back on any error. Output must pass `/api/optimize` validation. **v1 cleanup:** `lib/ai/rules.ts` hardcodes `HORIZON_END = 48`; use `HORIZON_HOURS` from `@/lib/rates` (72). Hour 0 is now midnight **Sun Oct 25**, so "by 7 AM" for a Monday plug-in means Tue 7 AM = hour 55, and trips ("Thursday to Saturday") become `Trip` dates, not flags. | "Charge my car by 7 AM and I'm away Thursday to Saturday" → EV task + Thu–Sat trip, with no API key. |
 | D5 | **`/methodology` page** (DESIGN.md §7): how-it-works diagram, sources table (DATA.md), assumptions, privacy, limitations. Uses C's components. | Linked from both apps. |
 | D6 | **Demo script + shot list** (PLAN.md §3), timed to 2:00. Who clicks what, which state to start from (A9 reset). | Team read-through at 10 PM. |
 | D7 | **Stretch data** (DATA.md §5) only if D1–D5 are done by 9 PM: LMP line on the ribbon → cleanest hours → NREL baseline shape. | — |
@@ -100,7 +145,7 @@
 4. Commit → toast → points 150 → 160.
 5. AEP Overview within 5 s: KPI numbers change; projected chart callout changes.
 6. Zone context card shows source and date (real or clearly labeled sample).
-7. Heat map A renders all 12 areas with Change metric.
+7. `/api/heatmap?view=area_hour&metric=change` returns 12 rows × 24 columns with negative values in Mon 2–6 PM. (The heat map *grid* is C7, right after integration; it's checked in Checklist 2.)
 → `git tag demo-v1 && git push --tags`
 
 ## Checklist 2 — Phase 2 (9:30 PM)
@@ -109,6 +154,8 @@
 3. AEP creates Flex Event Mon 4–6 PM 2× → banner on customer within 5 s → Join → multiplied points → opted-in count rises.
 4. Coach: the demo sentence fills the Plan and Week with no API key.
 5. `/methodology` lists every source with dates.
+6. Heat map A (C7) renders all 12 areas with the Change metric; Mon 2–6 PM cells are teal.
+7. Flex events page (A10) at `/utility/events` creates an event and lists opted-in homes.
 
 ## Checklist 3 — Demo-ready (11:30 PM) → `demo-v2`
 1. `resetDemo()` → full PLAN.md §3 run-through in under 2:15, twice, identical.

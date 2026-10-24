@@ -32,7 +32,7 @@ Customers see peak vs. off-peak and save money. AEP sees tomorrow's and next wee
 - **Customer · Today:** day ribbon with peak/off-peak (AEP Ohio time-of-use windows), headline recommendation.
 - **Customer · Plan:** appliance cards → optimize → recommended start on the ribbon → per-task and total savings + kWh moved out of peak → Commit.
 - **AEP · Overview:** KPI strip + projected load graph (baseline vs. planned, peak band, % reduction) + real AEP-zone reference chart.
-- **AEP · Heat map A:** area × hour for tomorrow, metric = planned load or change vs. baseline.
+- **AEP · Heat map A:** area × hour for tomorrow, metric = planned load or change vs. baseline. The **data** (`/api/heatmap`, A6) is due at integration; the **grid UI** (C7) lands right after, by 8:30 PM.
 - **Engine:** 12 synthetic areas, coordinated scheduling on by default, `/api/summary`, `/api/heatmap`, `/api/rates`.
 
 ### Phase 2 — Planning ahead (target 9:30 PM)
@@ -140,9 +140,9 @@ interface RegionReference { label: string; source: string; date: string; demandM
 
 | Person | Owns | Folders |
 |---|---|---|
-| **A — Engine, API, integration (you)** | config, types, rates, 12-area community, routines/trips seeding, optimizer, forecast, summary, heat map aggregation, events. **Owns `package.json` + lockfile.** Merges at integration. | `lib/` (except `lib/ai/`, `lib/realdata/`), `app/api/` (except `app/api/coach/`) |
+| **A — Engine, API, integration (you)** | config, types, rates, 12-area community, routines/trips seeding, optimizer, forecast, summary, heat map aggregation, events. **Owns `package.json` + lockfile.** Merges at integration. | `lib/` (except `lib/ai/`, `lib/realdata/`), `app/api/` (except `app/api/coach/`), plus the Flex events page: `app/utility/events/`, `components/utility/events/` (BUILD.md A10) |
 | **B — Customer app** | Today ribbon, Plan (appliance cards), Routine, Trips, savings, commit, points, Flex Event banner, coach command bar UI | `app/(customer)/`, `components/customer/` |
-| **C — AEP dashboard + design system** | **Design tokens and shared UI first (by 4:45 PM)**, then KPI strip, projected load graph, zone reference chart, both heat maps, Flex Event composer | `components/ui/` (incl. existing `Nav.tsx`), `app/utility/`, `components/utility/`, `app/layout.tsx` (fonts), `app/globals.css`, `tailwind.config.ts` |
+| **C — AEP dashboard + design system** | **Design tokens and shared UI first (by 4:45 PM)**, then KPI strip, projected load graph, zone reference chart, both heat maps, "Next Flex Event" card (the Flex events page moved to A) | `components/ui/` (incl. existing `Nav.tsx`), `app/utility/` and `components/utility/` (except A's `events/` folders), `app/layout.tsx` (fonts), `app/globals.css`, `tailwind.config.ts` |
 | **D — Real data, coach, methodology, pitch** | DATA.md pulls → JSON, loaders, coach + fallback, `/methodology` page, demo script/video, submission, judge Q&A | `data/`, `scripts/`, `lib/realdata/`, `lib/ai/`, `app/api/coach/`, `app/methodology/` |
 
 ## 9. Timeline (from Sat 4:00 PM)
