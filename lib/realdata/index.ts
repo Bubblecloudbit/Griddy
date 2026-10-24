@@ -6,10 +6,12 @@
 // Never use fs or fetch here, and never call PJM/EIA live (see design.md §6).
 import type { RegionReference } from "@/lib/types";
 import { MOCK_REGION_REFERENCE } from "@/lib/mock";
-// To use a snapshot made by scripts/convert.mjs, import it and set SNAPSHOT to it:
-// import snapshot from "@/data/real/pjm_aep_forecast_7d.json";
+// Snapshot made by scripts/convert.mjs (see scripts/README.md). PJM 7-day AEP forecast retrieved
+// Oct 24, trimmed to start Sun Oct 25 so hour index 0 is the same real day as the demo clock.
+// Set SNAPSHOT to null to fall back to the mock.
+import snapshot from "@/data/real/pjm_aep_forecast_7d.json";
 
-const SNAPSHOT: unknown = null; // e.g. `= snapshot;`
+const SNAPSHOT: unknown = snapshot;
 
 const MAX_HOURS = 7 * 24; // the PJM 7-day forecast (DATA.md §2)
 

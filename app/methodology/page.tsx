@@ -87,8 +87,10 @@ function sourceRows(): SourceRow[] {
     },
     {
       name: zoneIsSample ? `${zone.source} (sample until our pull lands)` : zone.source,
-      use: zoneIsSample ? "AEP zone context: whole-zone load, in MW" : `AEP zone context: ${zone.label}, in MW`,
-      date: zoneIsSample ? "Sample shape, not real numbers" : zone.date.replace(/^retrieved/, "Retrieved"),
+      use: zoneIsSample ? "AEP zone context: whole-zone load, in MW" : `Zone context chart: ${zone.label}, in MW`,
+      date: zoneIsSample
+        ? "Sample shape, not real numbers"
+        : zone.date.replace(/^retrieved (\d{4}-\d{2}-\d{2})$/, (_, iso: string) => `Retrieved ${longDate(iso)}`),
       href: zone.sourceUrl,
       tag: zoneIsSample ? "SIMULATED" : "REAL",
     },
