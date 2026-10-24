@@ -4,7 +4,7 @@
 
 import { useEffect, useState } from "react";
 import type { FlexTask, RatePlan, ScheduledTask, WeeklyRoutine } from "@/lib/types";
-import { Card, Nav } from "@/components/ui";
+import { Card, Nav, useToast } from "@/components/ui";
 import { MOCK_HOUSEHOLD, MOCK_ROUTINE } from "@/lib/mock";
 import { optimize, commitPlan, getRates } from "@/components/customer/client";
 import { AppShell, type Tab } from "@/components/customer/AppShell";
@@ -27,7 +27,8 @@ export default function CustomerPage() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [points, setPoints] = useState(MOCK_HOUSEHOLD.points);
-  const [committedMsg, setCommittedMsg] = useState<string | null>(null);
+  const [committed, setCommitted] = useState(false);
+  const { showToast, toast } = useToast();
 
   useEffect(() => {
     getRates()
@@ -40,7 +41,7 @@ export default function CustomerPage() {
     setTasks(next);
     setSchedule(null);
     setError(null);
-    setCommittedMsg(null);
+    setCommitted(false);
   }
 
   async function runOptimize() {
@@ -59,9 +60,10 @@ export default function CustomerPage() {
   async function runCommit() {
     setBusy(true);
     try {
-      const earned = await commitPlan(tasks, []);
-      setPoints((p) => p + earned);
-      setCommittedMsg(`Plan committed · +${earned} GridPoints`);
+      const total = await commitPlan(tasks, []);
+      showToast(`Plan committed · +${total - points} GridPoints`);
+      setPoints(total);
+      setCommitted(true);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not commit plan.");
     } finally {
@@ -94,13 +96,12 @@ export default function CustomerPage() {
             plugInHour={routine.plugInHour}
             busy={busy}
             error={error}
-            committed={committedMsg !== null}
+            committed={committed}
             onTasksChange={changeTasks}
             onOptimize={runOptimize}
             onCommit={runCommit}
           />
         )}
-        {tab === "plan" && committedMsg && <p className="text-body text-plan">{committedMsg}</p>}
 
         {tab === "week" && (
           <Placeholder title="Your week" text="Routine and trips will show here." />
@@ -110,6 +111,7 @@ export default function CustomerPage() {
           <Placeholder title="Rewards" text={`You have ${points} GridPoints.`} />
         )}
       </AppShell>
+      {toast}
     </>
   );
 }

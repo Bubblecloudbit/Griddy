@@ -27,7 +27,7 @@ export async function getRates(): Promise<RatePlan> {
   return get<RatePlan>("/api/rates");
 }
 
-// Returns GridPoints earned by this commit.
+// Returns the household's new GridPoints total (not the points earned).
 export async function commitPlan(tasks: FlexTask[], flags: LoadFlag[]): Promise<number> {
   const data = await post<{ points: number }>("/api/plan", {
     householdId: HOUSEHOLD_ID,
