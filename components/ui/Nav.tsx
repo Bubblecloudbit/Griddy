@@ -1,18 +1,19 @@
-// components/ui/Nav.tsx — shared nav (Shared ownership; create early, avoid simultaneous edits)
+// components/ui/Nav.tsx — shared top nav (owner: C). C3 replaces this with the app switcher.
 import Link from "next/link";
+import { Tag } from "./Tag";
 
 export function Nav() {
   return (
-    <nav className="flex items-center gap-4 border-b border-slate-200 bg-white px-6 py-3">
-      <span className="font-bold text-slate-900">GridShift</span>
-      <Link href="/" className="text-sm text-blue-600 hover:underline">
-        Customer
+    <nav className="flex items-center gap-4 border-b border-line bg-surface px-6 py-3">
+      <span className="text-h2 text-ink">GridShift</span>
+      <Link href="/" className="text-body text-ink-muted hover:text-ink">
+        Customer app
       </Link>
-      <Link href="/utility" className="text-sm text-blue-600 hover:underline">
-        AEP View
+      <Link href="/utility" className="text-body text-ink-muted hover:text-ink">
+        AEP dashboard
       </Link>
-      <span className="ml-auto rounded bg-amber-100 px-2 py-0.5 text-xs text-amber-800">
-        Prototype — all figures illustrative / simulated
+      <span className="ml-auto">
+        <Tag kind="SIMULATED" />
       </span>
     </nav>
   );

@@ -2,12 +2,43 @@
 @tailwind components;
 @tailwind utilities;
 
+/* GridShift tokens (DESIGN.md §2). Hex values mirror components/ui/tokens.ts. */
 :root {
-  --background: #0a0a0a;
-  --foreground: #ededed;
+  --paper: #f7f6f2;
+  --surface: #ffffff;
+  --line: #e4e1d8;
+  --ink: #14213d;
+  --ink-muted: #5b6474;
+  --peak: #c2410c;
+  --peak-wash: #fcebdd;
+  --plan: #0f766e;
+  --plan-wash: #e2f1ee;
+  --baseline: #9aa3ae;
+  --real: #3557a0;
+  --real-wash: #e7edf8;
+  --danger: #b42318;
 }
 
 body {
-  background: #f8fafc;
-  color: #0f172a;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-plex-sans), system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 20px;
+  /* Numbers always line up (DESIGN.md §2 Type). */
+  font-variant-numeric: tabular-nums;
+}
+
+@layer components {
+  /* Heat map cell hidden for privacy (< 5 homes): paper with a diagonal hatch. */
+  .hatch-hidden {
+    background-color: var(--paper);
+    background-image: repeating-linear-gradient(
+      135deg,
+      var(--line) 0,
+      var(--line) 1px,
+      transparent 1px,
+      transparent 6px
+    );
+  }
 }
