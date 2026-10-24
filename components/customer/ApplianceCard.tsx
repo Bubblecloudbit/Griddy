@@ -101,7 +101,10 @@ function Recommendation({ result, rate }: { result: ScheduledTask; rate: RatePla
             ? `Saves ${money(saved)} vs. starting at ${clockLabel(result.earliestStart)}`
             : "Same cost as starting right away"}
         </span>
-        {result.reason && <InfoTip label="Why this time?">{result.reason}</InfoTip>}
+        <span className="flex shrink-0 items-center gap-2">
+          {saved > 0.005 && <Tag kind="ILLUSTRATIVE" />}
+          {result.reason && <InfoTip label="Why this time?">{result.reason}</InfoTip>}
+        </span>
       </div>
     </div>
   );

@@ -4,7 +4,7 @@
 
 import { useEffect, useState } from "react";
 import type { FlexEvent, FlexTask, RatePlan, ScheduledTask, Trip, WeeklyRoutine } from "@/lib/types";
-import { Card, Nav, useToast } from "@/components/ui";
+import { Nav, useToast } from "@/components/ui";
 import { MOCK_HOUSEHOLD, MOCK_ROUTINE } from "@/lib/mock";
 import { optimize, commitPlan, getEvents, getRates } from "@/components/customer/client";
 import { AppShell, type Tab } from "@/components/customer/AppShell";
@@ -14,13 +14,11 @@ import { PlanTab } from "@/components/customer/PlanTab";
 import { WeekTab } from "@/components/customer/WeekTab";
 import { FlexEventBanner } from "@/components/customer/FlexEventBanner";
 import { CommandBar } from "@/components/customer/CommandBar";
-import { DEMO_NOW } from "@/components/customer/hours";
+import { RewardsTab, type PointsEntry } from "@/components/customer/RewardsTab";
+import { CardSkeleton } from "@/components/customer/Skeleton";
+import { DEMO_NOW, eventLabel } from "@/components/customer/hours";
 
 const EVENT_POLL_MS = 5000;
-
-function Placeholder({ title, text }: { title: string; text: string }) {
-  return <Card title={title} explainer={text} />;
-}
 
 export default function CustomerPage() {
   const [tab, setTab] = useState<Tab>("today");
@@ -38,6 +36,7 @@ export default function CustomerPage() {
   const [events, setEvents] = useState<FlexEvent[]>([]);
   const [joinedIds, setJoinedIds] = useState<string[]>([]);
   const [countedIds, setCountedIds] = useState<string[]>([]);
+  const [history, setHistory] = useState<PointsEntry[]>([]);
   const { showToast, toast } = useToast();
 
   useEffect(() => {
@@ -101,6 +100,10 @@ export default function CustomerPage() {
       const bonus = newEvent ? ` (${newEvent.multiplier}× Flex Event)` : "";
       showToast(`Plan committed · +${earned} GridPoints${bonus}`);
       setCountedIds(joinedIds);
+      const label = newEvent
+        ? `Committed plan · Flex Event ${eventLabel(newEvent)} (${newEvent.multiplier}×)`
+        : "Committed plan";
+      setHistory((h) => [...h, { id: `p-${Date.now()}`, label, points: earned }]);
       setPoints(total);
       setCommitted(true);
     } catch (e) {
@@ -133,11 +136,15 @@ export default function CustomerPage() {
               )}
             </>
           ) : rateError ? (
-            <p role="alert" className="text-body text-danger">{rateError}</p>
+            <p role="alert" className="text-body text-danger">Couldn&apos;t load peak hours: {rateError}</p>
           ) : (
-            <Card title="Peak and off-peak hours" explainer="Loading rates…" />
+            <>
+              <CardSkeleton lines={2} />
+              <CardSkeleton lines={4} />
+            </>
           ))}
 
+        {tab === "plan" && !rate && <CardSkeleton />}
         {tab === "plan" && rate && (
           <PlanTab
             rate={rate}
@@ -169,7 +176,7 @@ export default function CustomerPage() {
         )}
 
         {tab === "rewards" && (
-          <Placeholder title="Rewards" text={`You have ${points} GridPoints.`} />
+          <RewardsTab points={points} history={history} onPlan={() => setTab("plan")} />
         )}
       </AppShell>
       {toast}
