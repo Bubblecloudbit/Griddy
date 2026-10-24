@@ -12,3 +12,5 @@ export { EmptyState } from "./EmptyState";
 export { ChartFrame } from "./ChartFrame";
 export * from "./chart";
 export { Nav } from "./Nav";
+export { AnimatedNumber, useAnimatedNumber } from "./AnimatedNumber";
+export * from "./format";

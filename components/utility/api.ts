@@ -1,6 +1,6 @@
 // components/utility/api.ts — the only place the AEP view talks to the backend (owner: C)
 // Routes are owned by A (real engine since v1 integration).
-import type { FlexEvent, Forecast } from "@/lib/types";
+import type { FlexEvent, Forecast, Summary } from "@/lib/types";
 
 export type Scope = string; // a neighborhood id ("n1") or "region"
 
@@ -24,6 +24,13 @@ async function errorMessage(res: Response): Promise<string> {
   } catch {
     return `Request failed (${res.status})`;
   }
+}
+
+// KPI strip numbers (BUILD.md C4). Polled every 5 s on the Overview.
+export async function fetchSummary(): Promise<Summary> {
+  const res = await fetch("/api/summary", { cache: "no-store" });
+  if (!res.ok) throw new ApiError(res.status, await errorMessage(res));
+  return res.json();
 }
 
 export async function fetchEvents(): Promise<FlexEvent[]> {
