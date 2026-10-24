@@ -1,3 +1,5 @@
+> **Superseded in part by PLAN.md v2 (Sat 4 PM).** No transformer line, coordination toggle, `/api/simulate`, or 3-area community; horizon is 72 h; peak is AEP Ohio 2–6 PM weekdays. Where this file and PLAN.md disagree, **PLAN.md wins**. Kept for the algorithm notes and v1 history.
+
 # GridShift — Scaffold Tasks
 
 > Scaffold only. Goal: `npm run dev` runs, both pages render, four people can build in parallel against mock data.
