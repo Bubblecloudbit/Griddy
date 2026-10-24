@@ -1,0 +1,11 @@
+{
+  "source": "AEP Ohio (Ohio Power Company), Time-of-Use program page",
+  "sourceUrl": "https://www.aepohio.com/account/bills/programs/time-of-use",
+  "retrieved": "2026-10-24",
+  "summer": { "months": [5, 6, 7, 8, 9, 10], "peakClockHours": [14, 15, 16, 17], "text": "May 1 - Oct 31, 2 p.m. - 6 p.m." },
+  "winter": { "months": [11, 12, 1, 2, 3, 4], "peakClockHours": [6, 7, 8], "text": "Nov 1 - Apr 30, 6 a.m. - 9 a.m." },
+  "weekdaysOnly": true,
+  "holidaysExcluded": ["New Year's Day", "Presidents' Day", "Memorial Day", "Independence Day", "Labor Day", "Thanksgiving Day", "Christmas Day"],
+  "eligibility": "Residential Standard Service Offer (SSO) customers with an AMI (smart) meter; tariff 015",
+  "pricesVerified": false
+}

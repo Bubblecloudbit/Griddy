@@ -1,6 +1,6 @@
 // POST /api/coach (owner: D)
 // Request: { message: string }
-// Response: { reply: string, tasks?: FlexTask[], flags?: LoadFlag[] }
+// Response: { reply: string, tasks?: FlexTask[], trips?: Trip[], flags?: LoadFlag[] }
 import { NextResponse } from "next/server";
 import { coach } from "@/lib/ai/coach";
 

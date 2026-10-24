@@ -1,9 +1,12 @@
 // scripts/convert.mjs — Raw PJM/EIA CSVs → RegionReference JSON (owner: D)
 // Run by hand; the app never reads CSVs or calls PJM/EIA at runtime (design.md §6).
 //
-//   node scripts/convert.mjs --demand data/raw/load.csv --date 2024-10-15 --area AEP \
-//     [--forecast data/raw/forecast.csv] [--price data/raw/lmp.csv] \
-//     [--days 2] [--label "..."] [--source "..."] [--out data/real/pjm-aep-2024-10-15.json]
+//   node scripts/convert.mjs --demand data/raw/load.csv --date 2026-10-17 --area AEP \
+//     [--forecast data/raw/forecast.csv] [--price data/raw/lmp.csv] [--days 7] \
+//     [--retrieved 2026-10-24] [--label "..."] [--source "..."] [--out data/real/pjm_aep_load_week.json]
+//
+// 7-day forecast only (DATA.md §2): pass --forecast without --demand. The forecast becomes
+// demandMW, and each hour keeps the newest evaluation instead of the day-ahead one.
 //
 // Each CSV column is found by its header name (PJM Data Miner 2 and EIA Grid Monitor
 // layouts below). Use --out instead of ">" on Windows PowerShell, which writes UTF-16.
@@ -37,10 +40,12 @@ function parseArgs(argv) {
     if (!argv[i].startsWith("--") || argv[i + 1] === undefined) fail(`bad argument near "${argv[i]}"`);
     opts[argv[i].slice(2)] = argv[i + 1];
   }
-  if (!opts.demand) fail("--demand <csv> is required");
+  if (!opts.demand && !opts.forecast) fail("--demand <csv> or --forecast <csv> is required");
   if (!/^\d{4}-\d{2}-\d{2}$/.test(opts.date ?? "")) fail("--date YYYY-MM-DD is required");
-  opts.days = Number(opts.days ?? 2);
-  if (opts.days !== 1 && opts.days !== 2) fail("--days must be 1 or 2");
+  opts.days = Number(opts.days ?? 7);
+  if (!Number.isInteger(opts.days) || opts.days < 1 || opts.days > 7) fail("--days must be 1 to 7");
+  opts.retrieved ??= new Date().toISOString().slice(0, 10);
+  opts.forecastOnly = !opts.demand;
   return opts;
 }
 
@@ -110,7 +115,7 @@ function slotIndex(ts, date) {
 const sum = (xs) => xs.reduce((a, b) => a + b, 0);
 
 // demand: sum the load areas inside the zone. price: average the nodes.
-// forecast: the latest forecast made before that day began (a true day-ahead forecast).
+// forecast: the newest forecast readSeries kept (day-ahead, or any in forecast-only mode).
 function combine(kind, entries) {
   if (kind === "demand") return sum(entries.map((e) => e.value));
   if (kind === "forecast" && entries[0].evaluated !== null) {
@@ -154,7 +159,8 @@ function readSeries(file, kind, opts) {
       const evalTs = parseTimestamp(row[evalCol] ?? "");
       evaluated = evalTs ? slotIndex(evalTs, opts.date) : null;
       const dayStart = Math.floor(index / 24) * 24;
-      if (evaluated === null || evaluated >= dayStart) continue; // keep day-ahead forecasts only
+      if (evaluated === null) continue;
+      if (!opts.forecastOnly && evaluated >= dayStart) continue; // keep day-ahead forecasts only
     }
     slots[index].push({ value, evaluated });
   }
@@ -175,29 +181,40 @@ function detectOrg(header) {
 // RegionReference
 // ---------------------------------------------------------------------------
 const SOURCE_NAMES = { PJM: "PJM Data Miner 2", EIA: "U.S. EIA Hourly Electric Grid Monitor" };
+const SOURCE_URLS = { PJM: "https://dataminer2.pjm.com", EIA: "https://www.eia.gov/electricity/gridmonitor/" };
+
+// "2026-10-25T00:00", one per slot. On a fall-back DST day (Nov 1 2026) the repeated hour merges into one slot.
+function isoHours(opts) {
+  const [y, m, d] = opts.date.split("-").map(Number);
+  return Array.from({ length: opts.days * 24 }, (_, i) => new Date(Date.UTC(y, m - 1, d, i)).toISOString().slice(0, 16));
+}
 
 function defaultLabel(orgs, opts) {
   const day = new Date(`${opts.date}T12:00:00Z`).toLocaleDateString("en-US", {
     weekday: "short", month: "short", day: "numeric", year: "numeric", timeZone: "UTC",
   });
-  const area = opts.area ? ` ${opts.area} Zone` : "";
-  const span = opts.days === 2 ? " (+ next day)" : "";
-  return `${orgs.join("/")}${area} — ${day.replace(/,/g, "")}${span}`;
+  const area = opts.area ? `${opts.area} zone` : "Zone";
+  if (opts.forecastOnly) return `${area} · ${orgs.join("/")} ${opts.days}-day load forecast`;
+  const span = opts.days > 1 ? ` (${opts.days} days)` : "";
+  return `${area} · ${orgs.join("/")} hourly load from ${day.replace(/,/g, "")}${span}`;
 }
 
 function main() {
   const opts = parseArgs(process.argv.slice(2));
-  const demand = readSeries(opts.demand, "demand", opts);
   const forecast = opts.forecast ? readSeries(opts.forecast, "forecast", opts) : null;
+  const demand = opts.forecastOnly ? forecast : readSeries(opts.demand, "demand", opts);
   const price = opts.price ? readSeries(opts.price, "price", opts) : null;
   const orgs = [...new Set([demand, forecast, price].filter(Boolean).map((s) => s.org))];
 
   const reference = {
     label: opts.label ?? defaultLabel(orgs, opts),
     source: opts.source ?? orgs.map((o) => SOURCE_NAMES[o]).join(" + "),
-    date: opts.date,
+    sourceUrl: SOURCE_URLS[orgs[0]],
+    date: `retrieved ${opts.retrieved}`,
+    unit: "MW",
+    hours: isoHours(opts),
     demandMW: demand.values.map(Math.round),
-    ...(forecast && { forecastMW: forecast.values.map(Math.round) }),
+    ...(forecast && !opts.forecastOnly && { forecastMW: forecast.values.map(Math.round) }),
     ...(price && { priceUSDperMWh: price.values.map((v) => Math.round(v * 100) / 100) }),
   };
 
