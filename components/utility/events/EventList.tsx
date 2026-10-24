@@ -20,7 +20,7 @@ function EventRow({ event, view }: { event: FlexEvent; view: EventsView }) {
       </div>
       <p className="text-caption text-ink-muted">{event.message}</p>
       <p className="text-caption text-ink-muted">
-        <span className="font-mono text-ink">{formatInt(event.optedIn ?? 0)}</span> homes opted in ·{" "}
+        <span className="font-mono text-ink">{formatInt(event.optedIn ?? 0)}</span> {event.optedIn === 1 ? "home" : "homes"} opted in ·{" "}
         <span className="font-mono text-ink">≈ {formatKWh(kWh)}</span> kept out of the window
       </p>
     </li>
