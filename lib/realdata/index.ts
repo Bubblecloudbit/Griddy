@@ -1,15 +1,17 @@
 // lib/realdata/index.ts — Region reference loader (owner: D)
-// Returns the real PJM/EIA snapshot for C's region chart, or the mock until one exists.
+// Real PJM snapshots for C's zone context card: the 7-day forecast and last week's metered load.
 //
 // Synchronous and browser-safe on purpose: the snapshot is a static JSON import that
 // gets bundled into the page, so C's "use client" utility page can call this directly.
 // Never use fs or fetch here, and never call PJM/EIA live (see design.md §6).
 import type { RegionReference } from "@/lib/types";
 import { MOCK_REGION_REFERENCE } from "@/lib/mock";
-// Snapshot made by scripts/convert.mjs (see scripts/README.md). PJM 7-day AEP forecast retrieved
-// Oct 24, trimmed to start Sun Oct 25 so hour index 0 is the same real day as the demo clock.
-// Set SNAPSHOT to null to fall back to the mock.
+// Snapshots made by scripts/convert.mjs (see scripts/README.md).
+// Forecast: PJM 7-day AEP forecast retrieved Oct 24, trimmed to start Sun Oct 25 so hour index 0
+// is the same real day as the demo clock. Set SNAPSHOT to null to fall back to the mock.
 import snapshot from "@/data/real/pjm_aep_forecast_7d.json";
+// Last week: PJM metered AEP load, Fri Oct 16 – Thu Oct 22 (the last full week posted on Oct 24).
+import lastWeek from "@/data/real/pjm_aep_load_week.json";
 
 const SNAPSHOT: unknown = snapshot;
 
@@ -44,4 +46,10 @@ function checkSnapshot(data: unknown): RegionReference {
 
 export function getRegionReference(): RegionReference {
   return SNAPSHOT === null ? MOCK_REGION_REFERENCE : checkSnapshot(SNAPSHOT);
+}
+
+// "Last week: actual" view for the zone card (DATA.md §3): real daily shape with the weekend dip.
+// Hour index 0 is Fri Oct 16, NOT the demo clock, so label the axis from `hours`, not hour index.
+export function getLastWeekLoad(): RegionReference {
+  return checkSnapshot(lastWeek);
 }

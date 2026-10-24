@@ -8,7 +8,7 @@ import { NEIGHBORHOODS } from "@/lib/community";
 import { DAY_NAMES, OUTLOOK_DAYS, PLAN_DAY, dayLabel } from "@/lib/config";
 import { MIN_GROUP_SIZE } from "@/lib/forecast";
 import { DEFAULT_RATE } from "@/lib/rates";
-import { getRegionReference } from "@/lib/realdata";
+import { getLastWeekLoad, getRegionReference } from "@/lib/realdata";
 import tou from "@/data/real/aep_tou.json";
 
 const HOMES = NEIGHBORHOODS.reduce((n, a) => n + a.homes, 0);
@@ -77,6 +77,7 @@ interface SourceRow {
 function sourceRows(): SourceRow[] {
   const zone = getRegionReference();
   const zoneIsSample = zone.date === "sample";
+  const week = getLastWeekLoad();
   return [
     {
       name: tou.source,
@@ -93,6 +94,13 @@ function sourceRows(): SourceRow[] {
         : zone.date.replace(/^retrieved (\d{4}-\d{2}-\d{2})$/, (_, iso: string) => `Retrieved ${longDate(iso)}`),
       href: zone.sourceUrl,
       tag: zoneIsSample ? "SIMULATED" : "REAL",
+    },
+    {
+      name: week.source,
+      use: `Zone context chart, last week: ${week.label}, in MW`,
+      date: week.date.replace(/^retrieved (\d{4}-\d{2}-\d{2})$/, (_, iso: string) => `Retrieved ${longDate(iso)}`),
+      href: week.sourceUrl,
+      tag: "REAL",
     },
     {
       name: "Time-of-use prices",
