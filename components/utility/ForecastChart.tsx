@@ -46,6 +46,8 @@ export function ForecastChart({ forecast, events = [] }: Props) {
             tick={{ fontSize: 11 }}
           />
           <YAxis
+            // always leave room for the transformer limit, even when load is far below it
+            domain={[0, (dataMax: number) => Math.ceil((Math.max(dataMax, forecast.capacityKW) * 1.1) / 50) * 50]}
             tick={{ fontSize: 11 }}
             label={{ value: "kW", angle: -90, position: "insideLeft", fontSize: 11 }}
           />
