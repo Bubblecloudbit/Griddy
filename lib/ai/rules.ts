@@ -26,10 +26,10 @@ const APPLIANCES: Appliance[] = [
 const AWAY_PATTERN = /\b(away|vacation|out of town|traveling|trip)\b/;
 const HIGH_LOAD_PATTERN = /\b(guests|party|hosting|project|space heater|company)\b/;
 
-const AWAY_DELTA_KW = -1.0; // simulated: a typical home's load mostly drops out
+const AWAY_DELTA_KW = -0.5; // simulated, matches PLAN.md §13
 const HIGH_LOAD_DELTA_KW = 2.0; // simulated: extra load for guests or a big project
 
-const LAST_HOUR: Hour = 47;
+const HORIZON_END: Hour = 48; // exclusive end of the 48-hour horizon, like deadline and flag endHour
 
 // ---------------------------------------------------------------------------
 // Time helpers (Hour 0 = midnight today, 24–47 = tomorrow)
@@ -55,6 +55,7 @@ function findClockHour(clause: string, keywords: string): number | null {
 }
 
 export function formatHour(h: Hour): string {
+  if (h >= HORIZON_END) return "the end of tomorrow";
   const clock = h % 24;
   const label = clock === 0 ? "12 AM" : clock === 12 ? "12 PM" : clock < 12 ? `${clock} AM` : `${clock - 12} PM`;
   return h >= 24 ? `${label} tomorrow` : label;
@@ -79,7 +80,7 @@ function parseTask(clause: string, now: Hour): FlexTask | string | null {
   const after = findClockHour(clause, "after|from|starting");
   const by = findClockHour(clause, "by|before|until");
   const earliestStart = after === null ? now : nextHourAtOrAfter(after, now);
-  const deadline = by === null ? Math.min(earliestStart + 24, LAST_HOUR) : nextHourAtOrAfter(by, earliestStart + 1);
+  const deadline = by === null ? Math.min(earliestStart + 24, HORIZON_END) : nextHourAtOrAfter(by, earliestStart + 1);
 
   const needed = durationHours(appliance);
   if (deadline - earliestStart < needed) {
@@ -96,10 +97,11 @@ function parseTask(clause: string, now: Hour): FlexTask | string | null {
   };
 }
 
+// [startHour, endHour) — endHour is exclusive, as in lib/forecast.ts.
 function flagWindow(clause: string, now: Hour): [Hour, Hour] {
-  if (/\btomorrow\b/.test(clause)) return [24, LAST_HOUR];
-  if (/\btonight\b/.test(clause)) return [now, 23];
-  return [now, LAST_HOUR]; // "this weekend", "for a few days": cover the whole 48 h horizon
+  if (/\btomorrow\b/.test(clause)) return [24, HORIZON_END];
+  if (/\btonight\b/.test(clause)) return [now, 24];
+  return [now, HORIZON_END]; // "this weekend", "for a few days": cover the whole 48 h horizon
 }
 
 function parseFlag(clause: string, now: Hour): LoadFlag | null {
@@ -121,7 +123,7 @@ function describeTask(t: FlexTask): string {
 function describeFlag(f: LoadFlag): string {
   const what = f.type === "away" ? "Away" : "Extra load";
   const sign = f.deltaKW > 0 ? "+" : "";
-  return `• ${what} from ${formatHour(f.startHour)} to ${formatHour(f.endHour)}: forecast ${sign}${f.deltaKW} kW (simulated).`;
+  return `• ${what} from ${formatHour(f.startHour)} until ${formatHour(f.endHour)}: forecast ${sign}${f.deltaKW} kW (simulated).`;
 }
 
 const HELP_REPLY =
