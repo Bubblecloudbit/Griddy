@@ -3,14 +3,15 @@
 // seeded per home id, so every demo run gives identical numbers. Self-reported homes aren't settled.
 import type { FlexEvent, FlexTask, Hour, Household, PointsLine, Settlement, SettlementSummary, TierResult, Verification } from "@/lib/types";
 import { PLAN_DAY } from "@/lib/config";
-import { DEMO_HOUSEHOLD_ID, mulberry32 } from "@/lib/community";
+import { DEMO_HOUSEHOLD_ID, hashString, mulberry32 } from "@/lib/community";
+import { meterReadRow } from "@/lib/exchange";
 import { addTaskLoad } from "@/lib/optimizer";
 import { MIN_GROUP_SIZE, applyFlags, planArea } from "@/lib/forecast";
 import { peakShiftKWh, verifiableTasks } from "@/lib/rewards";
 import { accuracyLine, capLines, isVerified, settledEventLine, settledShiftLine, total } from "@/lib/points";
 import { rangeText } from "@/lib/reasons";
 import {
-  getEvent, getLedger, getSettlementSummary, listNeighborhoods, saveSettlement, setLedger,
+  addMeterReads, getEvent, getLedger, getSettlementSummary, listNeighborhoods, saveSettlement, setLedger, type MeterRead,
 } from "@/lib/store";
 
 const USAGE_NOISE = 0.05; // ±5% on non-flexible load in the simulated meter read
@@ -20,13 +21,6 @@ const BASELINE_NOISE = 0.15; // ±15% day-to-day variation in those prior weekda
 const RELIABILITY_KEEP = 0.7; // R ← 0.7·R + 0.3·adherence
 
 const DAY_HOURS = Array.from({ length: 24 }, (_, c) => PLAN_DAY * 24 + c);
-
-// FNV-1a: a stable number from a string, so each home gets its own repeatable random stream.
-function hash(text: string): number {
-  let h = 2166136261;
-  for (let i = 0; i < text.length; i++) h = Math.imul(h ^ text.charCodeAt(i), 16777619);
-  return h >>> 0;
-}
 
 function jitter(rng: () => number, spread: number): number {
   return 1 + (rng() * 2 - 1) * spread;
@@ -62,8 +56,9 @@ function round1(n: number): number {
 }
 
 // Settles one measurable home: simulated actuals, delivered shift, event reduction, points.
-function settleHome(home: Household, plannedStart: (t: FlexTask) => Hour): Settlement {
-  const rng = mulberry32(hash(`${home.id}:${PLAN_DAY}`));
+// Also returns the simulated meter read (the data feed's meter_reads table).
+function settleHome(home: Household, plannedStart: (t: FlexTask) => Hour): { settlement: Settlement; read: MeterRead } {
+  const rng = mulberry32(hashString(`${home.id}:${PLAN_DAY}`));
   const reliability = home.reliability ?? 0.8;
   const onPlan = home.id === DEMO_HOUSEHOLD_ID; // Jordan always follows the plan, so the demo is predictable
 
@@ -100,7 +95,7 @@ function settleHome(home: Household, plannedStart: (t: FlexTask) => Hour): Settl
   // 4. Reliability update: history makes trust.
   home.reliability = round2(RELIABILITY_KEEP * reliability + (1 - RELIABILITY_KEEP) * adherence);
 
-  return {
+  const settlement: Settlement = {
     householdId: home.id,
     day: PLAN_DAY,
     verification: home.setup!.verification,
@@ -110,6 +105,7 @@ function settleHome(home: Household, plannedStart: (t: FlexTask) => Hour): Settl
     event: eventResult,
     points: lines,
   };
+  return { settlement, read: meterReadRow(home, DAY_HOURS.map((h) => actual[h])) };
 }
 
 function round2(n: number): number {
@@ -130,6 +126,7 @@ export function settlePlanDay(): SettlementSummary {
   if (existing) return existing;
 
   const settlements: Settlement[] = [];
+  const reads: MeterRead[] = [];
   const byTier = emptyTiers();
   const reliabilityByArea: SettlementSummary["reliabilityByArea"] = [];
 
@@ -143,8 +140,9 @@ export function settlePlanDay(): SettlementSummary {
         byTier.none.plannedKWh += peakShiftKWh(home.tasks, plannedStart); // planned, but not measurable
         continue;
       }
-      const s = settleHome(home, plannedStart);
+      const { settlement: s, read } = settleHome(home, plannedStart);
       settlements.push(s);
+      reads.push(read);
       byTier[tier].homes += 1;
       byTier[tier].plannedKWh += s.plannedShiftKWh;
       byTier[tier].deliveredKWh += s.deliveredShiftKWh;
@@ -173,5 +171,6 @@ export function settlePlanDay(): SettlementSummary {
     reliabilityByArea,
   };
   saveSettlement(settlements, summary);
+  addMeterReads(reads);
   return summary;
 }

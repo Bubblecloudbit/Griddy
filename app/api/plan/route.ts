@@ -9,6 +9,7 @@ import { DEFAULT_RATE, HORIZON_HOURS } from "@/lib/rates";
 import { InfeasibleTaskError, optimize } from "@/lib/optimizer";
 import { UnknownEventError, commitPlan } from "@/lib/store";
 import { awardCommit } from "@/lib/rewards";
+import { recordSubmission } from "@/lib/exchange";
 import { total } from "@/lib/points";
 import {
   BadRequest, errorResponse, parseEventIds, parseFlags, parseRoutine, parseSetup, parseTasks, parseTrips, readJson,
@@ -31,6 +32,7 @@ export async function POST(req: Request) {
     const household = commitPlan(String(body.householdId), plan);
     if (!household) return errorResponse(`unknown household "${body.householdId}"`, 404);
     const lines = awardCommit(household);
+    recordSubmission(household); // data feed: plan_submissions (pseudonymous)
     return NextResponse.json({ points: household.points, earned: total(lines.filter((l) => l.status === "settled")), lines });
   } catch (e) {
     if (e instanceof BadRequest || e instanceof InfeasibleTaskError) return errorResponse(e.message);

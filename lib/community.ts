@@ -44,6 +44,13 @@ const LAST_HOUR = HORIZON_HOURS; // deadlines are exclusive, so 72 = end of Tues
 
 const SEEDED_TRIP: Omit<Trip, "id"> = { label: "Trip", startDate: "2026-10-29", endDate: "2026-10-31" }; // Thu–Sat
 
+// FNV-1a: a stable 32-bit number from a string (per-home random streams, pseudonymous ids).
+export function hashString(text: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < text.length; i++) h = Math.imul(h ^ text.charCodeAt(i), 16777619);
+  return h >>> 0;
+}
+
 // mulberry32: tiny seeded PRNG returning floats in [0, 1). Also used by lib/settlement.ts.
 export function mulberry32(seed: number): () => number {
   let a = seed >>> 0;

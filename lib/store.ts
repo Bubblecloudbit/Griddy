@@ -2,7 +2,7 @@
 // Lives on globalThis so dev hot reloads and separate API routes share one copy.
 // Single-machine demo only: state resets when the server restarts.
 import type {
-  CustomerSetup, FlexEvent, FlexTask, Household, LoadFlag, Neighborhood, PointsLine, Settlement, SettlementSummary, Trip, WeeklyRoutine,
+  CustomerSetup, FlexEvent, FlexTask, Household, LoadFlag, Neighborhood, PointsLine, Settlement, SettlementSummary, Trip, Verification, WeeklyRoutine,
 } from "@/lib/types";
 import { generateCommunity } from "@/lib/community";
 
@@ -14,6 +14,24 @@ interface StoreState {
   ledger: Map<string, PointsLine[]>; // Phase 4: each home's points lines for the demo day (pending + settled)
   settlements: Map<string, Settlement>; // Phase 4: one per settled home (plan day)
   settlementSummary: SettlementSummary | null; // Phase 4: null until "Simulate Monday's meter reads"
+  planSubmissions: PlanSubmission[] | null; // Phase 4 data feed; null until first read (seeded lazily)
+  meterReads: MeterRead[]; // Phase 4 data feed; written by settlement
+}
+
+// Data feed tables (PHASE4.md §5). Pseudonymous: no names, no addresses. AEP never reads
+// these directly; it only sees aggregates of 5+ homes.
+export interface PlanSubmission {
+  pseudonymId: string;
+  areaId: string;
+  tier: Verification;
+  receivedHour: number; // demo clock
+  plannedKWh24: number[]; // the plan day, hour by hour
+}
+export interface MeterRead {
+  pseudonymId: string;
+  day: number;
+  source: "AMI (simulated)" | "Device (simulated)";
+  kWh: number[]; // the plan day, hour by hour
 }
 
 const globalStore = globalThis as unknown as { __gridshiftStore?: StoreState };
@@ -28,7 +46,25 @@ function seed(): StoreState {
     ledger: new Map(),
     settlements: new Map(),
     settlementSummary: null,
+    planSubmissions: null,
+    meterReads: [],
   };
+}
+
+export function getPlanSubmissions(): PlanSubmission[] | null {
+  return state().planSubmissions;
+}
+
+export function setPlanSubmissions(rows: PlanSubmission[]): void {
+  state().planSubmissions = rows;
+}
+
+export function getMeterReads(): MeterRead[] {
+  return state().meterReads;
+}
+
+export function addMeterReads(rows: MeterRead[]): void {
+  state().meterReads.push(...rows);
 }
 
 function state(): StoreState {
