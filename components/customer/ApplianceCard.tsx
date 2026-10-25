@@ -21,7 +21,7 @@ interface Props {
 }
 
 const selectClass =
-  "rounded-control border border-line bg-surface px-2 py-1 font-mono text-caption text-ink focus:border-ink focus:outline-none";
+  "rounded-control border border-line bg-surface px-2.5 py-1.5 text-body text-ink hover:border-ink-muted focus:border-brand focus:outline-none";
 
 export function ApplianceCard({ task, rate, result, onChange, onRemove }: Props) {
   const hours = durationHours(task);
@@ -29,11 +29,11 @@ export function ApplianceCard({ task, rate, result, onChange, onRemove }: Props)
   const labels = timeLabels(task);
 
   return (
-    <section className="rounded-card border border-line bg-surface p-4">
+    <section className="rounded-card border border-line bg-surface p-5">
       <header className="flex items-start justify-between gap-2">
         <div>
           <h2 className="text-h2 text-ink">{task.label}</h2>
-          <p className="font-mono text-caption text-ink-muted">
+          <p className="mt-0.5 text-caption text-ink-muted">
             {task.kWh} kWh · {task.powerKW} kW · runs {hours} h
           </p>
         </div>
@@ -91,9 +91,9 @@ function Recommendation({ result, rate }: { result: ScheduledTask; rate: RatePla
   const saved = result.baselineCost - result.cost;
 
   return (
-    <div className="mt-3 space-y-1 border-t border-line pt-3">
+    <div className="mt-4 space-y-1.5 rounded-control bg-brand-wash/60 px-3 py-2.5">
       <div className="flex items-center justify-between gap-2">
-        <span className="font-mono text-body text-ink">
+        <span className="text-body font-semibold text-ink">
           Start {hourLabel(result.start)} → done {clockLabel(end)}
         </span>
         <Tag kind={peak ? "PEAK" : "OFF-PEAK"} />

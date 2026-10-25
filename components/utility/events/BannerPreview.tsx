@@ -13,13 +13,13 @@ interface Props {
 
 export function BannerPreview({ startHour, endHour, multiplier, message }: Props) {
   return (
-    <div className="mx-auto w-full max-w-[380px] rounded-card border border-line bg-surface p-3">
+    <div className="mx-auto w-full max-w-[380px] rounded-card border border-peak bg-peak-wash p-4">
       <div className="flex items-start gap-3">
         <span className="mt-0.5 text-peak">
           <Zap size={16} strokeWidth={1.5} aria-hidden />
         </span>
         <div className="min-w-0 flex-1">
-          <div className="font-mono text-h2 text-ink">
+          <div className="font-display text-h2 text-ink">
             {rangeLabel(startHour, endHour)} · {multiplier}× points
           </div>
           <p className="mt-1 text-caption text-ink-muted">{message || "Your message appears here."}</p>

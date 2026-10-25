@@ -66,7 +66,7 @@ export function ZoneContextChart() {
   return (
     <ChartFrame
       title="AEP zone context · PJM"
-      explainer="MW, whole AEP zone. What AEP already forecasts for the whole zone. GridShift adds what customers plan to do."
+      explainer="MW, whole AEP zone. What AEP already forecasts for the whole zone. Griddy adds what customers plan to do."
       action={
         <>
           <Tag kind={sample ? "SIMULATED" : "REAL"} />

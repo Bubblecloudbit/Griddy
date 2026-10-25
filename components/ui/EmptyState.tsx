@@ -12,8 +12,8 @@ interface Props {
 export function EmptyState({ message, icon: Icon = Inbox, actionLabel, onAction }: Props) {
   return (
     <div className="flex flex-col items-center justify-center gap-3 py-10 text-center">
-      <span className="text-ink-muted">
-        <Icon size={16} strokeWidth={1.5} />
+      <span className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-wash text-brand">
+        <Icon size={18} strokeWidth={1.5} />
       </span>
       <p className="text-body text-ink-muted">{message}</p>
       {actionLabel && onAction && (

@@ -1,10 +1,10 @@
-// components/customer/CommandBar.tsx — "Tell GridShift what you need" (owner: B)
+// components/customer/CommandBar.tsx — "Tell Griddy what you need" (owner: B)
 // DESIGN.md §5.1: a command bar, not a chat. The coach proposes items as chips; nothing is
 // added until the user confirms.
 "use client";
 
 import { useState } from "react";
-import { ArrowRight, Check } from "lucide-react";
+import { ArrowRight, Check, Search } from "lucide-react";
 import type { FlexTask, Trip } from "@/lib/types";
 import { Button } from "@/components/ui";
 import { askCoach } from "./client";
@@ -82,21 +82,22 @@ export function CommandBar({ onConfirm }: Props) {
 
   return (
     <div className="space-y-2">
-      <form onSubmit={submit} className="flex items-center gap-2 rounded-control border border-line bg-surface px-3 py-1.5 focus-within:border-ink">
+      <form onSubmit={submit} className="flex items-center gap-2 rounded-control border border-line bg-surface py-1 pl-3 pr-1 focus-within:border-brand">
+        <Search size={16} strokeWidth={1.75} className="shrink-0 text-ink-muted" aria-hidden />
         <input
           value={message}
           onChange={(e) => setMessage(e.target.value)}
-          placeholder="Tell GridShift what you need…"
-          aria-label="Tell GridShift what you need"
-          className="min-w-0 flex-1 bg-transparent text-body text-ink placeholder:text-ink-muted focus:outline-none"
+          placeholder="Tell Griddy what you need…"
+          aria-label="Tell Griddy what you need"
+          className="min-w-0 flex-1 bg-transparent py-1.5 text-body text-ink placeholder:text-ink-muted focus:outline-none"
         />
         <button
           type="submit"
           disabled={busy || !message.trim()}
           aria-label="Read my request"
-          className="text-ink-muted transition-colors duration-fast hover:text-ink disabled:opacity-40"
+          className="flex h-8 w-8 items-center justify-center rounded-[5px] bg-brand text-surface transition-colors duration-fast hover:bg-brand-dark disabled:opacity-40"
         >
-          <ArrowRight size={16} strokeWidth={1.5} />
+          <ArrowRight size={16} strokeWidth={2} />
         </button>
       </form>
 
@@ -116,7 +117,7 @@ export function CommandBar({ onConfirm }: Props) {
                   type="button"
                   aria-pressed={on}
                   onClick={() => toggle(p.key)}
-                  className={`inline-flex items-center gap-1.5 rounded-control border px-2.5 py-1 text-caption transition-colors duration-fast ${
+                  className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-caption font-medium transition-colors duration-fast ${
                     on ? "border-plan bg-plan-wash text-plan" : "border-line bg-surface text-ink-muted"
                   }`}
                 >

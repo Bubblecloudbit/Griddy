@@ -42,7 +42,7 @@ export function PlanTab(props: Props) {
           <Button
             key={c.kind}
             variant="secondary"
-            className="px-2.5 py-1 text-caption"
+            className="rounded-full px-3 py-1 text-caption"
             onClick={() => onTasksChange([...tasks, newTask(c.kind, plugInHour)])}
           >
             <Plus size={14} strokeWidth={1.5} aria-hidden />
@@ -92,10 +92,10 @@ export function PlanTab(props: Props) {
 function TotalRow({ schedule }: { schedule: ScheduledTask[] }) {
   const { saved, peakKWhAvoided } = planTotals(schedule);
   return (
-    <div className="flex items-center justify-between gap-2 border-t border-line pt-3">
+    <div className="flex items-center justify-between gap-2 rounded-card border border-line bg-surface px-5 py-4">
       <span className="text-body text-ink">
-        Total <span className="font-mono">{money(saved)}</span> saved ·{" "}
-        <span className="font-mono">{kWh(peakKWhAvoided)}</span> out of peak
+        Total <span className="font-display text-h2 text-plan">{money(saved)}</span> saved ·{" "}
+        <span className="font-semibold">{kWh(peakKWhAvoided)}</span> out of peak
       </span>
       <Tag kind="ILLUSTRATIVE" />
     </div>

@@ -47,9 +47,9 @@ function PlannedBlocks({ schedule, day }: { schedule: ScheduledTask[]; day: numb
         const labelCol = startCol > 12 ? `1 / ${startCol}` : `${endCol} / 25`;
         return (
           <div key={t.id} className="grid items-center gap-px" style={GRID}>
-            <span className="h-2 rounded-tag bg-plan" style={{ gridColumn: `${startCol} / ${endCol}`, gridRow: 1 }} />
+            <span className="h-2.5 rounded-tag bg-plan" style={{ gridColumn: `${startCol} / ${endCol}`, gridRow: 1 }} />
             <span
-              className={`whitespace-nowrap px-1 font-mono text-caption text-ink ${startCol > 12 ? "text-right" : ""}`}
+              className={`whitespace-nowrap px-1.5 text-caption font-medium text-ink ${startCol > 12 ? "text-right" : ""}`}
               style={{ gridColumn: labelCol, gridRow: 1 }}
             >
               {t.label} {shortHour(t.start)}–{shortHour(end)}
@@ -101,7 +101,7 @@ export function DayRibbon({ rate, schedule = [] }: { rate: RatePlan; schedule?: 
         </div>
       }
     >
-      <div className="grid font-mono text-caption text-ink-muted" style={GRID}>
+      <div className="grid text-caption text-ink-muted" style={GRID}>
         {AXIS.map((c, i) => (
           <span key={c} style={{ gridColumn: `${c + 1} / span 3` }}>
             {AXIS_LABELS[i]}
@@ -120,8 +120,8 @@ export function DayRibbon({ rate, schedule = [] }: { rate: RatePlan; schedule?: 
               onMouseEnter={() => setActive(h)}
               onFocus={() => setActive(h)}
               onClick={() => setActive(h)}
-              className={`h-10 transition-opacity duration-fast ${
-                peak ? "border-t-2 border-peak bg-peak-wash" : "border-t-2 border-transparent bg-plan-wash"
+              className={`h-11 transition-opacity duration-fast first:rounded-l-[4px] last:rounded-r-[4px] ${
+                peak ? "border-t-[3px] border-peak bg-peak-wash" : "border-t-[3px] border-transparent bg-plan-wash"
               } ${active === h ? "outline outline-1 outline-ink" : ""}`}
             />
           );
@@ -131,7 +131,7 @@ export function DayRibbon({ rate, schedule = [] }: { rate: RatePlan; schedule?: 
       <div className="relative h-4">
         {Math.floor(DEMO_NOW / 24) === day && (
           <span
-            className="absolute font-mono text-caption text-ink"
+            className="absolute text-caption font-semibold text-ink"
             style={{ left: `calc(${((DEMO_NOW % 24) + 0.5) * (100 / 24)}% - 0.3em)` }}
           >
             ▲ now
@@ -141,7 +141,7 @@ export function DayRibbon({ rate, schedule = [] }: { rate: RatePlan; schedule?: 
 
       <PlannedBlocks schedule={schedule} day={day} />
 
-      <p className="mt-2 min-h-4 font-mono text-caption text-ink">
+      <p className="mt-3 min-h-4 text-caption text-ink-muted">
         {active !== null
           ? hourDetail(rate, active)
           : hasPeak

@@ -66,7 +66,7 @@ export function HeatmapGrid({ metric, rows, cols, load, change, projectedFrom, p
         {/* header row */}
         <div style={{ gridColumn: 1, gridRow: 1 }} />
         {cols.map((c, i) => (
-          <div key={c} style={{ gridColumn: i + 2, gridRow: 1 }} className="pb-1 text-center font-mono text-[10px] text-ink-muted">
+          <div key={c} style={{ gridColumn: i + 2, gridRow: 1 }} className="pb-1 text-center text-[11px] font-medium text-ink-muted">
             {c}
           </div>
         ))}
@@ -86,7 +86,7 @@ export function HeatmapGrid({ metric, rows, cols, load, change, projectedFrom, p
         {peak && (
           <div
             aria-hidden
-            className="pointer-events-none z-10 rounded-tag border-2 border-peak"
+            className="pointer-events-none z-10 rounded-[4px] border-2 border-peak"
             style={{ gridColumn: `${peak.cols[0] + 2} / ${peak.cols[1] + 3}`, gridRow: `${peak.rows[0] + 2} / ${peak.rows[1] + 3}` }}
           />
         )}

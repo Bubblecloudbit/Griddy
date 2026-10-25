@@ -3,8 +3,8 @@
 "use client";
 
 import Link from "next/link";
-import { Zap } from "lucide-react";
-import { Card, EmptyState, formatInt } from "@/components/ui";
+import { ArrowRight, Zap } from "lucide-react";
+import { BUTTON_BASE, BUTTON_VARIANTS, Card, EmptyState, formatInt } from "@/components/ui";
 import { fetchSummary } from "./api";
 import { rangeLabel } from "./hours";
 import { usePolling } from "./usePolling";
@@ -13,9 +13,10 @@ function CreateLink() {
   return (
     <Link
       href="/utility/events"
-      className="inline-flex items-center justify-center rounded-control border border-line bg-surface px-3 py-2 text-body font-medium text-ink transition-colors duration-fast hover:border-ink"
+      className={`${BUTTON_BASE} ${BUTTON_VARIANTS.secondary}`}
     >
       Create event
+      <ArrowRight size={16} strokeWidth={1.75} aria-hidden />
     </Link>
   );
 }
@@ -25,14 +26,14 @@ export function NextEventCard() {
   const event = data?.nextEvent ?? null;
 
   return (
-    <Card title="Next Flex Event" explainer="Ask enrolled homes to shift load out of a window. Rewards are GridPoints, not money.">
+    <Card eyebrow="Demand response" title="Next Flex Event" explainer="Ask enrolled homes to shift load out of a window. Rewards are GridPoints, not money.">
       {!data ? (
         <div className="h-24 animate-pulse rounded-control bg-paper" />
       ) : !event ? (
         <EmptyState message="No Flex Event scheduled." icon={Zap} />
       ) : (
-        <div className="space-y-2">
-          <div className="font-mono text-h2 text-ink">
+        <div className="space-y-2 rounded-control border-l-[3px] border-peak bg-peak-wash/60 px-4 py-3">
+          <div className="font-display text-h2 text-ink">
             {rangeLabel(event.startHour, event.endHour)} · {event.multiplier}× points
           </div>
           <p className="text-body text-ink-muted">{event.message}</p>

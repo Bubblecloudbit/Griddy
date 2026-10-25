@@ -119,7 +119,7 @@ export function ProjectedLoadChart({ scope, onScopeChange }: { scope: Scope; onS
   return (
     <ChartFrame
       title={`Projected residential load · ${areaName(scope)} · Mon`}
-      explainer={`kW${homes ? `, ${homes} combined` : ""}. Baseline = everyone runs things when they get home. Planned = committed GridShift plans.`}
+      explainer={`kW${homes ? `, ${homes} combined` : ""}. Baseline = everyone runs things when they get home. Planned = committed Griddy plans.`}
       action={
         <>
           <AreaPicker value={scope} onChange={onScopeChange} />

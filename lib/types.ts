@@ -1,4 +1,4 @@
-// lib/types.ts — GridShift type contract (v2, PLAN.md §7)
+// lib/types.ts — Griddy type contract (v2, PLAN.md §7)
 // Change only with full-team agreement. Other teammates' code depends on every name here.
 // v2 changes are all additive and marked `// v2`; nothing from v1 was renamed or removed.
 

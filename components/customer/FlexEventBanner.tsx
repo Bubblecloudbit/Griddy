@@ -13,7 +13,7 @@ interface Props {
 
 export function FlexEventBanner({ event, joined, onJoin }: Props) {
   return (
-    <section className="rounded-card border border-peak bg-peak-wash p-4">
+    <section className="rounded-card border border-l-4 border-peak bg-peak-wash p-5">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="flex items-center gap-1.5 text-caption font-semibold uppercase tracking-[0.04em] text-peak">
@@ -21,7 +21,7 @@ export function FlexEventBanner({ event, joined, onJoin }: Props) {
             Flex Event from AEP
           </p>
           <h2 className="mt-1 text-h2 text-ink">
-            {eventLabel(event)} · <span className="font-mono">{event.multiplier}×</span> points
+            {eventLabel(event)} · {event.multiplier}× points
           </h2>
           <p className="mt-1 text-caption text-ink-muted">{event.message}</p>
         </div>
