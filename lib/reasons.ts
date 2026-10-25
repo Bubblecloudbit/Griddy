@@ -46,7 +46,9 @@ export function explainStart(
   if (peakKWhAtStart > 0) {
     return `No full off-peak window fits before your deadline; this is the cheapest option${spread}`;
   }
-  const plugIn = start === task.earliestStart ? ", so it starts when you plug in" : "";
+  // Only a car is "plugged in"; a dishwasher or dryer just starts right away.
+  const startsNow = task.appliance === "ev" ? ", so it starts when you plug in" : ", so it starts right away";
+  const plugIn = start === task.earliestStart ? startsNow : "";
   if (rate.weekdaysOnly && isWeekend(start)) return `No peak hours on weekends${plugIn || spread}`;
   if (plugIn) return `Already off-peak${plugIn}`;
   return `Already off-peak${spread || `; starts ${whenLabel(start, rate)}`}`;

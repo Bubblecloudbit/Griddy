@@ -1,5 +1,6 @@
 // components/customer/ApplianceCard.tsx — one appliance on the Plan tab (owner: B)
-// DESIGN.md §5.2: energy, plug-in and ready-by pickers; after "Find best times", the
+// DESIGN.md §5.2: energy, earliest-start and deadline pickers (labels per appliance:
+// only a car is "plugged in"); after "Find best times", the
 // recommended start, tier tag, savings, and the reason behind an InfoTip.
 "use client";
 
@@ -8,6 +9,7 @@ import type { FlexTask, RatePlan, ScheduledTask } from "@/lib/types";
 import { isPeak } from "@/lib/rates";
 import { InfoTip, Tag } from "@/components/ui";
 import { durationHours } from "./client";
+import { timeLabels } from "./appliances";
 import { HORIZON_HOURS, clockLabel, hourLabel, hourOptions, money } from "./hours";
 
 interface Props {
@@ -24,6 +26,7 @@ const selectClass =
 export function ApplianceCard({ task, rate, result, onChange, onRemove }: Props) {
   const hours = durationHours(task);
   const fits = task.deadline - task.earliestStart >= hours;
+  const labels = timeLabels(task);
 
   return (
     <section className="rounded-card border border-line bg-surface p-4">
@@ -46,7 +49,7 @@ export function ApplianceCard({ task, rate, result, onChange, onRemove }: Props)
 
       <div className="mt-3 grid grid-cols-2 gap-3">
         <label className="flex flex-col gap-1 text-caption text-ink-muted">
-          Plugged in
+          {labels.start}
           <select
             className={selectClass}
             value={task.earliestStart}
@@ -58,7 +61,7 @@ export function ApplianceCard({ task, rate, result, onChange, onRemove }: Props)
           </select>
         </label>
         <label className="flex flex-col gap-1 text-caption text-ink-muted">
-          Ready by
+          {labels.end}
           <select
             className={selectClass}
             value={task.deadline}
@@ -73,7 +76,7 @@ export function ApplianceCard({ task, rate, result, onChange, onRemove }: Props)
 
       {!fits && (
         <p role="alert" className="mt-2 text-caption text-danger">
-          Needs {hours} h between plug-in and ready-by.
+          Needs {hours} h between “{labels.start.toLowerCase()}” and “{labels.end.toLowerCase()}”.
         </p>
       )}
 

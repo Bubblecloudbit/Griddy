@@ -188,7 +188,8 @@ function Assumptions() {
         <li>
           <span className="text-ink">Scheduling.</span>{" "}
           <span className="text-ink-muted">
-            Each task starts at the cheapest time between plug-in and ready-by. A small spreading term keeps one area&apos;s
+            Each task starts at the cheapest time between its earliest start (when the car is plugged in, or the dishwasher is
+            loaded) and its deadline. A small spreading term keeps one area&apos;s
             tasks from all starting in the same hour, so the plan doesn&apos;t create a new spike at 6 PM.
           </span>
         </li>
