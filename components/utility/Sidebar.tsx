@@ -3,7 +3,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BookOpen, Grid3x3, LayoutDashboard, Zap, type LucideIcon } from "lucide-react";
+import { Grid3x3, LayoutDashboard, Zap, type LucideIcon } from "lucide-react";
 
 interface Item {
   href: string;
@@ -16,7 +16,7 @@ const ITEMS: Item[] = [
   { href: "/utility", label: "Overview", icon: LayoutDashboard, exact: true },
   { href: "/utility/heatmaps", label: "Heat maps", icon: Grid3x3 },
   { href: "/utility/events", label: "Flex events", icon: Zap }, // page built by A (BUILD.md A10)
-  { href: "/methodology", label: "Methodology", icon: BookOpen }, // page built by D
+  // Methodology lives in the top app switcher (Nav), which both apps share, so it isn't repeated here.
 ];
 
 function isActive(pathname: string, item: Item): boolean {
