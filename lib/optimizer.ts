@@ -5,6 +5,7 @@ import type { FlexTask, Hour, RatePlan, ScheduledTask } from "@/lib/types";
 import { isPeak, priceAt } from "@/lib/rates";
 import { explainStart } from "@/lib/reasons";
 import { gridCost } from "@/lib/grid";
+import { breaksQuietHours } from "@/lib/quiet";
 
 export const COORDINATED_LAMBDA = 2; // ~0.5 $/EV-hour vs ~1.0 penalty/full-transformer-hour
 
@@ -60,9 +61,15 @@ function bestStart(task: FlexTask, sharedLoad: number[], capacityKW: number, rat
   if (lastStart < task.earliestStart || lastStart + duration(task) > sharedLoad.length) {
     throw new InfeasibleTaskError(`No feasible window for "${task.label}": it needs ${duration(task)} h between hour ${task.earliestStart} and ${task.deadline}.`);
   }
-  let best = task.earliestStart;
+  // Quiet hours (lib/quiet.ts): skip starts that would run a dryer 10 PM–7 AM, unless the
+  // customer's window leaves no other choice.
+  const starts = Array.from({ length: lastStart - task.earliestStart + 1 }, (_, i) => task.earliestStart + i);
+  const polite = starts.filter((s) => !breaksQuietHours(task, s, duration(task)));
+  const candidates = polite.length > 0 ? polite : starts;
+
+  let best = candidates[0];
   let bestScore = Infinity;
-  for (let s = task.earliestStart; s <= lastStart; s++) {
+  for (const s of candidates) {
     const grid = useGrid ? gridCost(s, duration(task), (i) => kwhInRunHour(task, i)) : 0;
     const score = energyCost(task, s, rate) + lambda * congestion(task, s, sharedLoad, capacityKW) + grid;
     if (score < bestScore) { // strict <, so ties keep the earliest start

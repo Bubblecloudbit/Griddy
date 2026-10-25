@@ -20,14 +20,15 @@ export interface Appliance {
   kWh: number;
   powerKW: number;
   pattern: RegExp;
+  readyBy: number; // default "done by" clock hour when the message gives none (next one after the start)
 }
 
 export const APPLIANCES: Appliance[] = [
-  { id: "ev", label: "EV charging", kWh: 10, powerKW: 7.2, pattern: /\b(ev|car|tesla|vehicle|charg(e|ing))\b/ },
-  { id: "dishwasher", label: "Dishwasher", kWh: 1.2, powerKW: 1.5, pattern: /\bdish(es|washer)?\b/ },
-  { id: "other", label: "Washer", kWh: 1.0, powerKW: 0.5, pattern: /\b(washer|washing machine|laundry)\b/ },
-  { id: "dryer", label: "Dryer", kWh: 1.5, powerKW: 3.0, pattern: /\b(dryer|dry)\b/ },
-  { id: "water_heater", label: "Water heater", kWh: 2.0, powerKW: 4.5, pattern: /\bwater heater\b/ },
+  { id: "ev", label: "EV charging", kWh: 10, powerKW: 7.2, pattern: /\b(ev|car|tesla|vehicle|charg(e|ing))\b/, readyBy: 7 }, // ready for the morning
+  { id: "dishwasher", label: "Dishwasher", kWh: 1.2, powerKW: 1.5, pattern: /\bdish(es|washer)?\b/, readyBy: 7 }, // clean by breakfast
+  { id: "other", label: "Washer", kWh: 1.0, powerKW: 0.5, pattern: /\b(washer|washing machine|laundry)\b/, readyBy: 22 }, // done tonight
+  { id: "dryer", label: "Dryer", kWh: 1.5, powerKW: 3.0, pattern: /\b(dryer|dry)\b/, readyBy: 22 }, // done by 10 PM (quiet hours)
+  { id: "water_heater", label: "Water heater", kWh: 2.0, powerKW: 4.5, pattern: /\bwater heater\b/, readyBy: 6 }, // hot for morning showers
 ];
 
 const AWAY_PATTERN = /\b(away|vacation|out of town|traveling|travelling|trip)\b/;
@@ -100,10 +101,12 @@ function parseTask(clause: string, plugIn: Hour): FlexTask | string | null {
   const after = findClockHour(clause, "after|from|starting");
   const by = findClockHour(clause, "by|before|until");
   const earliestStart = after === null ? plugIn : nextHourAtOrAfter(after, PLAN_DAY_START);
-  const deadline =
-    by === null ? Math.min(earliestStart + 24, HORIZON_HOURS) : nextHourAtOrAfter(by, earliestStart + 1);
-
+  // No "by …": use the appliance's sensible default (dryer done by 10 PM, car ready by 7 AM),
+  // pushed a day later only if it can't fit before then.
   const needed = durationHours(appliance);
+  const defaultBy = nextHourAtOrAfter(appliance.readyBy, earliestStart + needed);
+  const deadline = by === null ? Math.min(defaultBy, HORIZON_HOURS) : nextHourAtOrAfter(by, earliestStart + 1);
+
   if (deadline > HORIZON_HOURS) {
     return `${appliance.label}: plans can run until ${formatHour(HORIZON_HOURS)}. Try an earlier ready-by time.`;
   }
