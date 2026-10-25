@@ -2,7 +2,7 @@
 // Tabs: Today (ribbon, value card, settlement) · Plan (appliance cards) · Week (setup, routine, trips) · Rewards.
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { CustomerSetup, FlexEvent, FlexTask, MyStatus, RatePlan, ScheduledTask, Trip, WeeklyRoutine } from "@/lib/types";
 import { Nav, useToast } from "@/components/ui";
 import { MOCK_HOUSEHOLD, MOCK_ROUTINE } from "@/lib/mock";
@@ -46,6 +46,8 @@ export default function CustomerPage() {
   const [setupDismissed, setSetupDismissed] = useState(false);
   const [status, setStatus] = useState<MyStatus | null>(null);
   const [savingSetup, setSavingSetup] = useState(false);
+  // Setup saves in flight, the latest one's number, and when the last one finished.
+  const setupSaves = useRef({ inFlight: 0, latest: 0, lastDoneAt: 0 });
   const { showToast, toast } = useToast();
 
   // After a reload, show the setup that's on file instead of an empty card.
@@ -61,10 +63,17 @@ export default function CustomerPage() {
   }, []);
 
   // Poll Flex Events and Jordan's own status. A failed poll just keeps the last value.
+  // A status poll that started before the latest setup save finished is stale: drop it,
+  // so it can't overwrite the setup the user just saved.
   useEffect(() => {
     const load = () => {
       getEvents().then(setEvents).catch(() => {});
-      getMe().then(setStatus).catch(() => {});
+      const startedAt = Date.now();
+      getMe()
+        .then((s) => {
+          if (setupSaves.current.inFlight === 0 && startedAt > setupSaves.current.lastDoneAt) setStatus(s);
+        })
+        .catch(() => {});
     };
     load();
     const id = setInterval(load, POLL_MS);
@@ -75,7 +84,8 @@ export default function CustomerPage() {
   const upcomingEvent = events.filter((e) => e.endHour > DEMO_NOW).at(-1) ?? null;
   const choiceComplete = setupChoice.rate !== undefined && setupChoice.measure !== undefined;
   const setup = choiceComplete ? toSetup(setupChoice as SetupChoice) : status?.setup;
-  const showSetupPrompt = !setup && !setupDismissed;
+  // Today's prompt stays until the setup is actually on file (so "Saving…/Saved" and any error show).
+  const showSetupPrompt = !savedSetup && !setupDismissed;
 
   // Any edit to the task list makes the current schedule stale.
   function changeTasks(next: FlexTask[]) {
@@ -85,36 +95,44 @@ export default function CustomerPage() {
     setCommitted(false);
   }
 
-  // Saves as soon as both answers are picked and differ from what's on file. If a plan is
-  // already committed, the server refreshes its pending points for the new setup.
-  async function changeSetup(next: Partial<SetupChoice>) {
+  // Saves as soon as both answers are picked. If a plan is already committed, the server
+  // redoes its pending estimate for the new setup. Only the latest of overlapping saves is
+  // applied. Returns false if the save failed. `quiet` skips the toast (the caller shows one).
+  async function changeSetup(next: Partial<SetupChoice>, quiet = false): Promise<boolean> {
     setSetupChoice(next);
-    if (next.rate === undefined || next.measure === undefined) return;
-    const s = toSetup(next as SetupChoice);
-    if (savedSetup && s.rate === savedSetup.rate && s.verification === savedSetup.verification) return;
+    if (next.rate === undefined || next.measure === undefined) return true;
+    const saves = setupSaves.current;
+    const mine = ++saves.latest;
+    saves.inFlight += 1;
     setSavingSetup(true);
     try {
-      setStatus(await saveSetup(s));
-      if (savedSetup) showToast("Setup updated");
+      const fresh = await saveSetup(toSetup(next as SetupChoice));
+      if (mine === saves.latest) setStatus(fresh);
+      if (!quiet) showToast("Setup saved");
+      return true;
     } catch (e) {
       showToast(e instanceof Error ? e.message : "Could not save setup.");
+      return false;
     } finally {
-      setSavingSetup(false);
+      saves.inFlight -= 1;
+      saves.lastDoneAt = Date.now();
+      if (saves.inFlight === 0) setSavingSetup(false);
     }
   }
 
-  // Items the user confirmed from the command bar.
-  function addFromCoach(newTasks: FlexTask[], newTrips: Trip[], newSetup?: Partial<CustomerSetup>) {
+  // Items the user confirmed from the command bar. One toast, after the setup save (if any).
+  async function addFromCoach(newTasks: FlexTask[], newTrips: Trip[], newSetup?: Partial<CustomerSetup>) {
     if (newTasks.length) changeTasks([...tasks, ...newTasks]);
     if (newTrips.length) {
       setTrips([...trips, ...newTrips]);
       setCommitted(false);
     }
-    if (newSetup) changeSetup(mergeSetup(setupChoice, newSetup));
+    const setupSaved = newSetup ? await changeSetup(mergeSetup(setupChoice, newSetup), true) : false;
+    if (newSetup && !setupSaved) return; // changeSetup already showed the error
     const parts = [
       newTasks.length && `${newTasks.length} appliance${newTasks.length > 1 ? "s" : ""}`,
       newTrips.length && `${newTrips.length} trip${newTrips.length > 1 ? "s" : ""}`,
-      newSetup && "your setup",
+      setupSaved && "your setup",
     ].filter(Boolean);
     if (parts.length) showToast(`Added ${parts.join(" and ")} · see Plan and Week`);
   }

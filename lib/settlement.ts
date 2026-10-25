@@ -83,11 +83,17 @@ function settleHome(home: Household, plannedStart: (t: FlexTask) => Hour): { set
   }
 
   // 5. Points (rules in lib/points.ts), capped with what the day already holds.
-  const earned: PointsLine[] = [settledShiftLine(deliveredShiftKWh)];
+  const kept = getLedger(home.id).filter((l) => l.status === "settled");
+  // A self-reported contribution already paid for this plan comes off the shift, so the same
+  // kWh is never paid twice (matches the pending estimate in lib/rewards.ts).
+  const already = total(kept.filter((l) => l.rule === "contribution"));
+  const shift = settledShiftLine(deliveredShiftKWh);
+  const earned: PointsLine[] = [
+    already ? { ...shift, points: Math.max(0, shift.points - already), detail: `${shift.detail}, minus ${already} contribution already earned` } : shift,
+  ];
   if (event && eventResult) earned.push(settledEventLine(eventResult.reducedKWh, event.multiplier, rangeText(event.startHour, event.endHour)));
   const bonus = accuracyLine(total(earned), adherence);
   if (bonus) earned.push(bonus);
-  const kept = getLedger(home.id).filter((l) => l.status === "settled");
   const lines = capLines(earned, total(kept));
   setLedger(home.id, [...kept, ...lines]); // pending estimates are replaced by measured lines
   home.points += total(lines);

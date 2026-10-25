@@ -66,8 +66,7 @@ function touComparison(home: Household): { flatMonthly: number; touMonthly: numb
 // pending verified-shift and Flex Event estimates for measurable homes. Replaces any
 // earlier pending estimate. Returns this commit's lines; settled ones are added to points.
 export function awardCommit(home: Household): PointsLine[] {
-  const ledger = getLedger(home.id);
-  const kept = ledger.filter((l) => l.status === "settled"); // drop the old pending estimate
+  const kept = getLedger(home.id).filter((l) => l.status === "settled"); // drop the old pending estimate
   const startOf = plannedStarts(home);
 
   const lines: PointsLine[] = [];
@@ -75,15 +74,32 @@ export function awardCommit(home: Household): PointsLine[] {
   if (!isVerified(home.setup?.verification)) {
     if (!kept.some((l) => l.rule === "contribution")) lines.push(contributionLine(peakShiftKWh(home.tasks, startOf)));
   } else {
-    const measurable = verifiableTasks(home);
-    lines.push(pendingShiftLine(peakShiftKWh(measurable, startOf)));
-    for (const e of (home.eventIds ?? []).map(getEvent).filter((e): e is FlexEvent => !!e)) {
-      lines.push(pendingEventLine(eventShiftKWh(measurable, startOf, e), e.multiplier, rangeText(e.startHour, e.endHour)));
-    }
+    lines.push(...pendingLines(home, startOf, kept));
   }
 
   const capped = capLines(lines, total(kept)).filter((l) => l.points > 0 || l.rule === "commit");
   home.points += total(capped.filter((l) => l.status === "settled"));
   setLedger(home.id, [...kept, ...capped]);
   return capped;
+}
+
+// Pending estimates for a measurable home. A self-reported contribution already earned for
+// the same plan is subtracted from the shift estimate, so the same kWh is never paid twice.
+function pendingLines(home: Household, startOf: (t: FlexTask) => Hour, kept: PointsLine[]): PointsLine[] {
+  const measurable = verifiableTasks(home);
+  const shift = pendingShiftLine(peakShiftKWh(measurable, startOf));
+  const already = total(kept.filter((l) => l.rule === "contribution"));
+  const lines = [already ? { ...shift, points: Math.max(0, shift.points - already), detail: `${shift.detail}, minus ${already} contribution already earned` } : shift];
+  for (const e of (home.eventIds ?? []).map(getEvent).filter((e): e is FlexEvent => !!e)) {
+    lines.push(pendingEventLine(eventShiftKWh(measurable, startOf, e), e.multiplier, rangeText(e.startHour, e.endHour)));
+  }
+  return lines;
+}
+
+// A setup change after a commit (POST /api/setup): replace the pending estimate for the new
+// tier. Never awards settled points, so switching back and forth can't earn anything.
+export function refreshPending(home: Household): void {
+  const kept = getLedger(home.id).filter((l) => l.status === "settled");
+  const pending = isVerified(home.setup?.verification) ? pendingLines(home, plannedStarts(home), kept) : [];
+  setLedger(home.id, [...kept, ...capLines(pending, total(kept)).filter((l) => l.points > 0)]);
 }

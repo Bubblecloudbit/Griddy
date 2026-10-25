@@ -97,7 +97,7 @@ export function SetupCard({ choice, onChange, onDismiss, saved, saving }: Props)
         saving ? (
           <p className="text-caption text-ink-muted">Saving…</p>
         ) : isSaved ? (
-          <p className="text-caption text-ink-muted">Saved. Pending points follow your setup.</p>
+          <p className="text-caption text-ink-muted">Saved.</p>
         ) : undefined
       }
     >
