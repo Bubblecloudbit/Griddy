@@ -3,12 +3,20 @@
 // knows, so it's always true: peak kWh moved, and whether spreading load or the grid term
 // (lib/grid.ts) changed the start.
 import type { FlexTask, Hour, RatePlan } from "@/lib/types";
-import { isWeekend } from "@/lib/config";
+import { DAY_NAMES, isWeekend, weekdayOf } from "@/lib/config";
 
 // "6 PM", "12 AM"
 function clockLabel(clock: number): string {
   const c = ((clock % 24) + 24) % 24;
   return `${c % 12 === 0 ? 12 : c % 12} ${c < 12 ? "AM" : "PM"}`;
+}
+
+// "Mon 4–6 PM" for a window of horizon hours [start, end).
+export function rangeText(start: Hour, end: Hour): string {
+  const from = clockLabel(start);
+  const to = clockLabel(end);
+  const sameHalf = from.slice(-2) === to.slice(-2);
+  return `${DAY_NAMES[weekdayOf(start)]} ${sameHalf ? from.slice(0, -3) : from}–${to}`;
 }
 
 // "2–6 PM" for a contiguous peak window like [14, 15, 16, 17].

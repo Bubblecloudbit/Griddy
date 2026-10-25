@@ -38,6 +38,15 @@ export function peakKWh(task: FlexTask, start: Hour, rate: RatePlan): number {
   return kwh;
 }
 
+// kWh the task draws inside [from, to) if it starts at `start` (e.g. a Flex Event window).
+export function windowKWh(task: FlexTask, start: Hour, from: Hour, to: Hour): number {
+  let kwh = 0;
+  for (let i = 0; i < duration(task); i++) {
+    if (start + i >= from && start + i < to) kwh += kwhInRunHour(task, i);
+  }
+  return kwh;
+}
+
 // Penalty for running in crowded hours. Used only to choose the start, never shown as $.
 function congestion(task: FlexTask, start: Hour, sharedLoad: number[], capacityKW: number): number {
   let penalty = 0;
