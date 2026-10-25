@@ -1,18 +1,18 @@
 // app/utility/data-feed/page.tsx — Data feed (owner: C, PLAN.md §7a AEP 4)
-// What flows between GridShift and AEP: the pipeline, live intake counters, one sample
+// What flows between Griddy and AEP: the pipeline, live intake counters, one sample
 // aggregated row, and the forecast CSV. AEP only ever sees aggregates of 5+ homes.
 "use client";
 
 import { useCallback } from "react";
 import { ArrowDown, Download } from "lucide-react";
-import { Card, Stat, Tag, formatInt } from "@/components/ui";
+import { Card, PageHeader, Stat, Tag, formatInt } from "@/components/ui";
 import { fetchIntake } from "@/components/utility/api";
 import { fullHourLabel } from "@/components/utility/hours";
 import { usePolling } from "@/components/utility/usePolling";
 
 const STEPS: { title: string; body: string }[] = [
   { title: "Customer app", body: "Plan committed: tasks, trips, setup" },
-  { title: "GridShift API → plan_submissions", body: "Pseudonymous id, area, measurement tier, 24 h planned kWh. No names, no addresses." },
+  { title: "Griddy API → plan_submissions", body: "Pseudonymous id, area, measurement tier, 24 h planned kWh. No names, no addresses." },
   { title: "Aggregate (≥ 5 homes)", body: "Per area × hour: baseline, expected, verified-only, planned, homes, verified homes" },
   { title: "AEP forecast feed", body: "This dashboard, plus the CSV below" },
   { title: "AEP meter data (AMI) → meter_reads → settlement", body: "After the day: measured shift and Flex Event reduction, points back to customers" },
@@ -54,13 +54,12 @@ export default function DataFeedPage() {
   const { data: sample } = usePolling(loadSample);
 
   return (
-    <div className="space-y-4">
-      <div>
-        <h1 className="text-h1">Data feed</h1>
-        <p className="text-caption text-ink-muted">
-          What a real integration would exchange, simulated in memory. Production: a database plus AEP&apos;s meter data system.
-        </p>
-      </div>
+    <div className="space-y-6">
+      <PageHeader
+        eyebrow="AEP · Residential flexibility"
+        title="Data feed"
+        lead="What a real integration would exchange, simulated in memory. Production: a database plus AEP's meter data system."
+      />
 
       <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
         <Stat label="Plans received" value={intake ? formatInt(intake.plansReceived) : "—"} delta="plan_submissions rows" tag="SIMULATED" />

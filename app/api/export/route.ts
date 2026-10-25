@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
   return new Response(forecastCsv(scope), {
     headers: {
       "Content-Type": "text/csv; charset=utf-8",
-      "Content-Disposition": `attachment; filename="gridshift-forecast-${scope}-simulated.csv"`,
+      "Content-Disposition": `attachment; filename="griddy-forecast-${scope}-simulated.csv"`,
     },
   });
 }

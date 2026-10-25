@@ -6,7 +6,7 @@
 import { useState } from "react";
 import { ShieldCheck } from "lucide-react";
 import type { SettlementSummary, Verification } from "@/lib/types";
-import { Button, Card, EmptyState, Stat, Tag, formatInt, formatKWh } from "@/components/ui";
+import { Button, Card, EmptyState, PageHeader, Stat, Tag, formatInt, formatKWh } from "@/components/ui";
 import { fetchSettlement, settlePlanDay } from "@/components/utility/api";
 import { usePolling } from "@/components/utility/usePolling";
 
@@ -109,19 +109,20 @@ export default function VerificationPage() {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-h1">Verification</h1>
-          <p className="text-caption text-ink-muted">AEP only pays for what it can measure. Meter reads here are simulated.</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="rounded-tag border border-ink-muted px-1.5 py-0.5 text-tag uppercase text-ink-muted">Demo</span>
-          <Button onClick={settle} disabled={busy || summary?.settled}>
-            {summary?.settled ? "Monday settled" : busy ? "Reading meters…" : "Simulate Monday's meter reads"}
-          </Button>
-        </div>
-      </div>
+    <div className="space-y-6">
+      <PageHeader
+        eyebrow="AEP · Residential flexibility"
+        title="Verification"
+        lead="AEP only pays for what it can measure. Meter reads here are simulated."
+        action={
+          <>
+            <span className="rounded-tag border border-ink-muted px-1.5 py-0.5 text-tag uppercase text-ink-muted">Demo</span>
+            <Button onClick={settle} disabled={busy || summary?.settled}>
+              {summary?.settled ? "Monday settled" : busy ? "Reading meters…" : "Simulate Monday's meter reads"}
+            </Button>
+          </>
+        }
+      />
       {error && <p role="alert" className="text-caption text-danger">{error}</p>}
       {!summary ? (
         <div className="h-40 animate-pulse rounded-card border border-line bg-surface" />

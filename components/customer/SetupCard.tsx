@@ -62,7 +62,7 @@ export function SetupCard({ choice, onChange, onDismiss }: Props) {
   return (
     <Card
       title="Your setup"
-      explainer="Tells GridShift what you can earn. Saved with your next plan commit."
+      explainer="Tells Griddy what you can earn. Saved with your next plan commit."
       action={onDismiss && <Button variant="quiet" className="px-2 py-1 text-caption" onClick={onDismiss}>Later</Button>}
     >
       <div className="space-y-3">
