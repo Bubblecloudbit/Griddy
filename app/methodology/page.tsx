@@ -190,7 +190,9 @@ function Assumptions() {
           <span className="text-ink-muted">
             Each task starts at the cheapest time between its earliest start (when the car is plugged in, or the dishwasher is
             loaded) and its deadline. A small spreading term keeps one area&apos;s
-            tasks from all starting in the same hour, so the plan doesn&apos;t create a new spike at 6 PM.
+            tasks from all starting in the same hour, so the plan doesn&apos;t create a new spike at 6 PM. A second small term uses
+            the real PJM forecast to steer away from the zone&apos;s busiest hours (around 7–8 AM and 7 PM), which differ from the
+            2–6 PM price window. Bill estimates still use the time-of-use price only.
           </span>
         </li>
         <li>

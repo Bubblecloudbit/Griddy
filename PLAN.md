@@ -71,6 +71,7 @@ score(s) = Σ price[h] × kWh drawn in h   +   λ × Σ (areaLoad[h] / transform
 ```
 - Tasks are scheduled least-flexible first. Each placed task adds to its area's load.
 - `λ > 0` always (`COORDINATED_LAMBDA` in `lib/optimizer.ts`). `transformerCapacityKW` is kept only as an internal normalizer; it is never displayed.
+- **Grid-stress tie-breaker** (`lib/grid.ts`): a small extra term from the real PJM AEP-zone 7-day forecast, so shifted load avoids the zone's real demand peaks (~7–8 AM, ~7 PM) as well as the 2–6 PM price window. It only picks the start; customer $ stay on the time-of-use price. **Off switch:** `GRID_WEIGHT = 0`, or revert its commit.
 - **Peak rule:** a clock hour is peak if the rate plan says so **and** the day is a weekday. Sunday Oct 25 has no peak.
 
 ### 7-day outlook (option a)
@@ -170,6 +171,7 @@ interface RegionReference { label: string; source: string; date: string; demandM
 - **Why would AEP trust plans?** Forecast signals with confidence that grows with history. Next step: verify against smart meter interval data.
 - **Doesn't this cost AEP revenue?** Time-of-use pricing exists so customers move load off peak. Lower peaks mean less expensive peak supply and less grid stress.
 - **Why doesn't everyone shift to the same hour?** The optimizer spreads load within each area (§6).
+- **Why is the peak 2–6 PM when the grid peaks ~7 PM?** Two different peaks: 2–6 PM is AEP Ohio's time-of-use *price* window (what customers pay; winter switches to 6–9 AM on Nov 1). PJM's forecast shows *demand* peaking ~7–8 AM and ~7 PM, so the optimizer also steers away from those hours (§6). Planned load at 7 PM is below baseline (simulated).
 - **What's real?** §5, exactly.
 - **Privacy?** Opt-in, aggregates of 5+ homes, no addresses.
 - **AI use?** Built with Claude Code and Kiro; in-app coach turns plain language into structured plans that the user confirms; deterministic fallback; humans own the model and assumptions.

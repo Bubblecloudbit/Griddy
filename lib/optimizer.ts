@@ -1,9 +1,10 @@
 // lib/optimizer.ts — appliance scheduler (owner: A)
-// Picks each task's start hour by minimizing: energy $ + lambda × congestion.
-// See design.md §2 for the pseudocode this follows line for line.
+// Picks each task's start hour by minimizing: energy $ + lambda × congestion + grid stress.
+// See design.md §2 for the first two terms; the grid term is lib/grid.ts (GRID_WEIGHT = 0 turns it off).
 import type { FlexTask, Hour, RatePlan, ScheduledTask } from "@/lib/types";
 import { isPeak, priceAt } from "@/lib/rates";
 import { explainStart } from "@/lib/reasons";
+import { gridCost } from "@/lib/grid";
 
 export const COORDINATED_LAMBDA = 2; // ~0.5 $/EV-hour vs ~1.0 penalty/full-transformer-hour
 
@@ -53,7 +54,8 @@ function round2(x: number): number {
   return Math.round(x * 100) / 100;
 }
 
-function bestStart(task: FlexTask, sharedLoad: number[], capacityKW: number, rate: RatePlan, lambda: number): Hour {
+// useGrid: include the PJM grid-stress tie-breaker (lib/grid.ts; GRID_WEIGHT = 0 turns it off).
+function bestStart(task: FlexTask, sharedLoad: number[], capacityKW: number, rate: RatePlan, lambda: number, useGrid = true): Hour {
   const lastStart = task.deadline - duration(task); // must finish by deadline (exclusive end)
   if (lastStart < task.earliestStart || lastStart + duration(task) > sharedLoad.length) {
     throw new InfeasibleTaskError(`No feasible window for "${task.label}": it needs ${duration(task)} h between hour ${task.earliestStart} and ${task.deadline}.`);
@@ -61,7 +63,8 @@ function bestStart(task: FlexTask, sharedLoad: number[], capacityKW: number, rat
   let best = task.earliestStart;
   let bestScore = Infinity;
   for (let s = task.earliestStart; s <= lastStart; s++) {
-    const score = energyCost(task, s, rate) + lambda * congestion(task, s, sharedLoad, capacityKW);
+    const grid = useGrid ? gridCost(s, duration(task), (i) => kwhInRunHour(task, i)) : 0;
+    const score = energyCost(task, s, rate) + lambda * congestion(task, s, sharedLoad, capacityKW) + grid;
     if (score < bestScore) { // strict <, so ties keep the earliest start
       bestScore = score;
       best = s;
@@ -94,7 +97,9 @@ export function optimize(
   for (const i of order) {
     const task = tasks[i];
     const start = bestStart(task, sharedLoad, capacityKW, rate, lambda);
-    const priceOnlyStart = lambda > 0 ? bestStart(task, sharedLoad, capacityKW, rate, 0) : start;
+    // For the "why" text: where it would start without spreading, and without the grid term too.
+    const noSpreadStart = bestStart(task, sharedLoad, capacityKW, rate, 0);
+    const priceOnlyStart = bestStart(task, sharedLoad, capacityKW, rate, 0, false);
     addTaskLoad(sharedLoad, task, start);
 
     const peakAtStart = peakKWh(task, start, rate);
@@ -105,7 +110,7 @@ export function optimize(
       cost: round2(energyCost(task, start, rate)),
       baselineCost: round2(energyCost(task, task.earliestStart, rate)), // "run it now" = start at plug-in
       peakKWhAvoided,
-      reason: explainStart(task, start, priceOnlyStart, peakKWhAvoided, peakAtStart, rate),
+      reason: explainStart(task, start, noSpreadStart, noSpreadStart !== priceOnlyStart, peakKWhAvoided, peakAtStart, rate),
     };
   }
 
