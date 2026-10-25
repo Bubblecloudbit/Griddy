@@ -1,6 +1,8 @@
 // components/customer/client.ts — the customer app's only door to the backend (owner: B)
-// All calls go to A's real engine (/api/optimize, /api/plan, /api/rates, /api/events).
-import type { FlexEvent, FlexTask, LoadFlag, RatePlan, ScheduledTask, Trip, WeeklyRoutine } from "@/lib/types";
+// All calls go to A's real engine (/api/optimize, /api/plan, /api/rates, /api/events, /api/me).
+import type {
+  CustomerSetup, FlexEvent, FlexTask, LoadFlag, MyStatus, PointsLine, RatePlan, ScheduledTask, Trip, WeeklyRoutine,
+} from "@/lib/types";
 
 export const HOUSEHOLD_ID = "h-jordan";
 export const NEIGHBORHOOD_ID = "n1";
@@ -32,6 +34,7 @@ export interface CoachReply {
   tasks?: FlexTask[];
   trips?: Trip[];
   flags?: LoadFlag[];
+  setup?: Partial<CustomerSetup>; // "I'm on the standard rate", "I have a smart meter"
 }
 
 // Plain language → proposed tasks/trips (D's coach; rule-based when there's no API key).
@@ -45,11 +48,22 @@ export interface PlanCommit {
   trips?: Trip[];
   routine?: WeeklyRoutine;
   eventIds?: string[];
+  setup?: CustomerSetup;
 }
 
-// points = the household's new total; earned = this commit's points, incl. any Flex Event bonus.
-export async function commitPlan(plan: PlanCommit): Promise<{ points: number; earned: number }> {
-  return post<{ points: number; earned: number }>("/api/plan", { householdId: HOUSEHOLD_ID, flags: [], ...plan });
+export interface CommitResult {
+  points: number; // settled total
+  earned: number; // settled by this commit (commit + contribution)
+  lines: PointsLine[]; // this commit's lines; measurable homes' shift/event lines are "pending"
+}
+
+export async function commitPlan(plan: PlanCommit): Promise<CommitResult> {
+  return post<CommitResult>("/api/plan", { householdId: HOUSEHOLD_ID, flags: [], ...plan });
+}
+
+// Jordan's own status: points, pending vs. settled lines, settlement, TOU comparison. Polled every 5 s.
+export async function getMe(): Promise<MyStatus> {
+  return get<MyStatus>(`/api/me?householdId=${HOUSEHOLD_ID}`);
 }
 
 // A non-JSON body (e.g. a dev-server error page) becomes "Request failed (404)", not a parse error.

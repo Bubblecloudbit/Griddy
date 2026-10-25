@@ -5,7 +5,7 @@
 
 import { useState } from "react";
 import { ArrowRight, Check, Search } from "lucide-react";
-import type { FlexTask, Trip } from "@/lib/types";
+import type { CustomerSetup, FlexTask, Trip } from "@/lib/types";
 import { Button } from "@/components/ui";
 import { askCoach } from "./client";
 import { taskLabel } from "./appliances";
@@ -16,16 +16,30 @@ interface Proposal {
   text: string;
   task?: FlexTask;
   trip?: Trip;
+  setup?: Partial<CustomerSetup>;
 }
 
 interface Props {
-  onConfirm: (tasks: FlexTask[], trips: Trip[]) => void;
+  onConfirm: (tasks: FlexTask[], trips: Trip[], setup?: Partial<CustomerSetup>) => void;
 }
 
 const weekday = (iso: string) => dateLabel(iso).split(" ")[0];
 
-function toProposals(tasks: FlexTask[] = [], trips: Trip[] = []): Proposal[] {
+const SETUP_TEXT = {
+  flat: "Standard rate",
+  tou: "Time-of-use rate",
+  smart_meter: "Smart meter",
+  device: "Smart charger or thermostat",
+  none: "No smart meter",
+};
+
+function setupText(s: Partial<CustomerSetup>): string {
+  return ["Setup", s.rate && SETUP_TEXT[s.rate], s.verification && SETUP_TEXT[s.verification]].filter(Boolean).join(" · ");
+}
+
+function toProposals(tasks: FlexTask[] = [], trips: Trip[] = [], setup?: Partial<CustomerSetup>): Proposal[] {
   return [
+    ...(setup ? [{ key: "setup", text: setupText(setup), setup }] : []),
     ...tasks.map((t) => ({
       key: t.id,
       text: `${taskLabel(t)} · ready ${clockLabel(t.deadline)}`,
@@ -51,7 +65,7 @@ export function CommandBar({ onConfirm }: Props) {
     setNote(null);
     try {
       const res = await askCoach(message.trim());
-      const next = toProposals(res.tasks, res.trips);
+      const next = toProposals(res.tasks, res.trips, res.setup);
       setProposals(next);
       setPicked(new Set(next.map((p) => p.key)));
       // Nothing understood: show the coach's own reply as a hint.
@@ -75,6 +89,7 @@ export function CommandBar({ onConfirm }: Props) {
     onConfirm(
       chosen.flatMap((p) => (p.task ? [p.task] : [])),
       chosen.flatMap((p) => (p.trip ? [p.trip] : [])),
+      chosen.find((p) => p.setup)?.setup,
     );
     setProposals([]);
     setMessage("");

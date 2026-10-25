@@ -1,5 +1,5 @@
-// components/customer/WeekTab.tsx — weekly routine, mini week strip, trips (owner: B)
-// DESIGN.md §5.3. Routine and trips are sent with the next plan commit.
+// components/customer/WeekTab.tsx — setup, weekly routine, mini week strip, trips (owner: B)
+// DESIGN.md §5.3 + PHASE4.md §6. Setup, routine, and trips are sent with the next plan commit.
 "use client";
 
 import { useState } from "react";
@@ -9,12 +9,15 @@ import { DAY_NAMES } from "@/lib/config";
 import { ROUTINE_PRESETS } from "@/lib/routines";
 import { Button, Card } from "@/components/ui";
 import { clockLabel, dateLabel, outlookDates } from "./hours";
+import { SetupCard, type SetupChoice } from "./SetupCard";
 
 interface Props {
   routine: WeeklyRoutine;
   trips: Trip[];
+  setup: Partial<SetupChoice>;
   onRoutineChange: (routine: WeeklyRoutine) => void;
   onTripsChange: (trips: Trip[]) => void;
+  onSetupChange: (setup: Partial<SetupChoice>) => void;
 }
 
 const PRESET_IDS = Object.keys(ROUTINE_PRESETS) as WeeklyRoutine["preset"][];
@@ -33,9 +36,10 @@ function HourSelect({ value, from, to, onChange }: { value: number; from: number
   );
 }
 
-export function WeekTab({ routine, trips, onRoutineChange, onTripsChange }: Props) {
+export function WeekTab({ routine, trips, setup, onRoutineChange, onTripsChange, onSetupChange }: Props) {
   return (
     <>
+      <SetupCard choice={setup} onChange={onSetupChange} />
       <RoutineCard routine={routine} onChange={onRoutineChange} />
       <WeekStrip routine={routine} trips={trips} />
       <TripsCard trips={trips} onChange={onTripsChange} />

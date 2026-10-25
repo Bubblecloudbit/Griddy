@@ -1,24 +1,32 @@
-// app/(customer)/page.tsx — customer app (owner: B). DESIGN.md §5.
-// Tabs: Today (ribbon, B2–B3) · Plan (appliance cards, B4–B5) · Week (B6) · Rewards (B9).
+// app/(customer)/page.tsx — customer app (owner: B). DESIGN.md §5 + PHASE4.md §6.
+// Tabs: Today (ribbon, value card, settlement) · Plan (appliance cards) · Week (setup, routine, trips) · Rewards.
 "use client";
 
 import { useEffect, useState } from "react";
-import type { FlexEvent, FlexTask, RatePlan, ScheduledTask, Trip, WeeklyRoutine } from "@/lib/types";
+import type { CustomerSetup, FlexEvent, FlexTask, MyStatus, RatePlan, ScheduledTask, Trip, WeeklyRoutine } from "@/lib/types";
 import { Nav, useToast } from "@/components/ui";
 import { MOCK_HOUSEHOLD, MOCK_ROUTINE } from "@/lib/mock";
-import { optimize, commitPlan, getEvents, getRates } from "@/components/customer/client";
+import { optimize, commitPlan, getEvents, getMe, getRates } from "@/components/customer/client";
 import { AppShell, type Tab } from "@/components/customer/AppShell";
 import { DayRibbon } from "@/components/customer/DayRibbon";
-import { BestTime, PlanStats } from "@/components/customer/TodaySummary";
+import { BestTime } from "@/components/customer/TodaySummary";
 import { PlanTab } from "@/components/customer/PlanTab";
 import { WeekTab } from "@/components/customer/WeekTab";
 import { FlexEventBanner } from "@/components/customer/FlexEventBanner";
 import { CommandBar } from "@/components/customer/CommandBar";
-import { RewardsTab, type PointsEntry } from "@/components/customer/RewardsTab";
+import { RewardsTab } from "@/components/customer/RewardsTab";
+import { SetupCard, toSetup, type SetupChoice } from "@/components/customer/SetupCard";
+import { ValueCard } from "@/components/customer/ValueCard";
+import { SettlementCard } from "@/components/customer/SettlementCard";
 import { CardSkeleton } from "@/components/customer/Skeleton";
-import { DEMO_NOW, eventLabel } from "@/components/customer/hours";
+import { DEMO_NOW } from "@/components/customer/hours";
 
-const EVENT_POLL_MS = 5000;
+const POLL_MS = 5000; // Flex Events and Jordan's status (settlement runs on the AEP side)
+
+// A coach-proposed setup ({ rate: "flat" }) merged into the card's choices.
+function mergeSetup(choice: Partial<SetupChoice>, s: Partial<CustomerSetup>): Partial<SetupChoice> {
+  return { ...choice, ...(s.rate && { rate: s.rate }), ...(s.verification && { measure: s.verification }) };
+}
 
 export default function CustomerPage() {
   const [tab, setTab] = useState<Tab>("today");
@@ -31,12 +39,12 @@ export default function CustomerPage() {
   const [schedule, setSchedule] = useState<ScheduledTask[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [points, setPoints] = useState(MOCK_HOUSEHOLD.points);
   const [committed, setCommitted] = useState(false);
   const [events, setEvents] = useState<FlexEvent[]>([]);
   const [joinedIds, setJoinedIds] = useState<string[]>([]);
-  const [countedIds, setCountedIds] = useState<string[]>([]);
-  const [history, setHistory] = useState<PointsEntry[]>([]);
+  const [setupChoice, setSetupChoice] = useState<Partial<SetupChoice>>({});
+  const [setupDismissed, setSetupDismissed] = useState(false);
+  const [status, setStatus] = useState<MyStatus | null>(null);
   const { showToast, toast } = useToast();
 
   useEffect(() => {
@@ -45,18 +53,22 @@ export default function CustomerPage() {
       .catch((e) => setRateError(e instanceof Error ? e.message : "Could not load rates."));
   }, []);
 
-  // Poll for Flex Events created on the AEP side. A failed poll just keeps the last list.
+  // Poll Flex Events and Jordan's own status. A failed poll just keeps the last value.
   useEffect(() => {
-    const load = () => getEvents().then(setEvents).catch(() => {});
+    const load = () => {
+      getEvents().then(setEvents).catch(() => {});
+      getMe().then(setStatus).catch(() => {});
+    };
     load();
-    const id = setInterval(load, EVENT_POLL_MS);
+    const id = setInterval(load, POLL_MS);
     return () => clearInterval(id);
   }, []);
 
   // Newest event that hasn't ended yet on the demo clock.
   const upcomingEvent = events.filter((e) => e.endHour > DEMO_NOW).at(-1) ?? null;
-  // A joined event earns its bonus on the first commit after joining (the engine skips repeats).
-  const newEvent = events.find((e) => joinedIds.includes(e.id) && !countedIds.includes(e.id)) ?? null;
+  const choiceComplete = setupChoice.rate !== undefined && setupChoice.measure !== undefined;
+  const setup = choiceComplete ? toSetup(setupChoice as SetupChoice) : status?.setup;
+  const showSetupPrompt = !setup && !setupDismissed;
 
   // Any edit to the task list makes the current schedule stale.
   function changeTasks(next: FlexTask[]) {
@@ -66,16 +78,23 @@ export default function CustomerPage() {
     setCommitted(false);
   }
 
+  function changeSetup(next: Partial<SetupChoice>) {
+    setSetupChoice(next);
+    setCommitted(false);
+  }
+
   // Items the user confirmed from the command bar.
-  function addFromCoach(newTasks: FlexTask[], newTrips: Trip[]) {
+  function addFromCoach(newTasks: FlexTask[], newTrips: Trip[], newSetup?: Partial<CustomerSetup>) {
     if (newTasks.length) changeTasks([...tasks, ...newTasks]);
     if (newTrips.length) {
       setTrips([...trips, ...newTrips]);
       setCommitted(false);
     }
+    if (newSetup) changeSetup(mergeSetup(setupChoice, newSetup));
     const parts = [
       newTasks.length && `${newTasks.length} appliance${newTasks.length > 1 ? "s" : ""}`,
       newTrips.length && `${newTrips.length} trip${newTrips.length > 1 ? "s" : ""}`,
+      newSetup && "your setup",
     ].filter(Boolean);
     if (parts.length) showToast(`Added ${parts.join(" and ")} · see Plan and Week`);
   }
@@ -96,16 +115,11 @@ export default function CustomerPage() {
   async function runCommit() {
     setBusy(true);
     try {
-      const { points: total, earned } = await commitPlan({ tasks, trips, routine, eventIds: joinedIds });
-      const bonus = newEvent ? ` (${newEvent.multiplier}× Flex Event)` : "";
-      showToast(`Plan committed · +${earned} GridPoints${bonus}`);
-      setCountedIds(joinedIds);
-      const label = newEvent
-        ? `Committed plan · Flex Event ${eventLabel(newEvent)} (${newEvent.multiplier}×)`
-        : "Committed plan";
-      setHistory((h) => [...h, { id: `p-${Date.now()}`, label, points: earned }]);
-      setPoints(total);
+      const res = await commitPlan({ tasks, trips, routine, eventIds: joinedIds, setup: choiceComplete ? setup : undefined });
+      const pending = res.lines.filter((l) => l.status === "pending").reduce((s, l) => s + l.points, 0);
+      showToast(`Plan committed · +${res.earned} GridPoints${pending ? ` · ${pending} pending` : ""}`);
       setCommitted(true);
+      setStatus(await getMe());
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not commit plan.");
     } finally {
@@ -116,14 +130,18 @@ export default function CustomerPage() {
   return (
     <>
       <Nav />
-      <AppShell tab={tab} onTab={setTab} points={points}>
+      <AppShell tab={tab} onTab={setTab} points={status?.points ?? MOCK_HOUSEHOLD.points}>
+        {tab === "today" && showSetupPrompt && (
+          <SetupCard choice={setupChoice} onChange={changeSetup} onDismiss={() => setSetupDismissed(true)} />
+        )}
         {tab === "today" && <CommandBar onConfirm={addFromCoach} />}
         {tab === "today" &&
           (rate ? (
             <>
               <BestTime rate={rate} />
               <DayRibbon rate={rate} schedule={schedule ?? []} />
-              <PlanStats schedule={schedule ?? []} />
+              <ValueCard setup={setup} status={status} schedule={schedule ?? []} />
+              {status?.settlement && <SettlementCard settlement={status.settlement} />}
               {upcomingEvent && (
                 <FlexEventBanner
                   event={upcomingEvent}
@@ -164,6 +182,7 @@ export default function CustomerPage() {
           <WeekTab
             routine={routine}
             trips={trips}
+            setup={setupChoice}
             onRoutineChange={(r) => {
               setRoutine(r);
               setCommitted(false);
@@ -172,12 +191,11 @@ export default function CustomerPage() {
               setTrips(t);
               setCommitted(false);
             }}
+            onSetupChange={changeSetup}
           />
         )}
 
-        {tab === "rewards" && (
-          <RewardsTab points={points} history={history} onPlan={() => setTab("plan")} />
-        )}
+        {tab === "rewards" && <RewardsTab status={status} onPlan={() => setTab("plan")} />}
       </AppShell>
       {toast}
     </>
