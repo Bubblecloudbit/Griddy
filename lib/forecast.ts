@@ -35,7 +35,7 @@ function addInto(target: number[], source: number[]): void {
   source.forEach((v, h) => (target[h] += v));
 }
 
-function applyFlags(load: number[], flags: LoadFlag[]): number[] {
+export function applyFlags(load: number[], flags: LoadFlag[]): number[] {
   const out = [...load];
   for (const f of flags) {
     for (let h = Math.max(0, f.startHour); h < Math.min(HORIZON_HOURS, f.endHour); h++) {

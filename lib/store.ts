@@ -1,7 +1,9 @@
 // lib/store.ts — in-memory store, seeded from the synthetic community (owner: A)
 // Lives on globalThis so dev hot reloads and separate API routes share one copy.
 // Single-machine demo only: state resets when the server restarts.
-import type { CustomerSetup, FlexEvent, FlexTask, Household, LoadFlag, Neighborhood, PointsLine, Trip, WeeklyRoutine } from "@/lib/types";
+import type {
+  CustomerSetup, FlexEvent, FlexTask, Household, LoadFlag, Neighborhood, PointsLine, Settlement, SettlementSummary, Trip, WeeklyRoutine,
+} from "@/lib/types";
 import { generateCommunity } from "@/lib/community";
 
 interface StoreState {
@@ -10,6 +12,8 @@ interface StoreState {
   events: FlexEvent[];
   nextEventId: number;
   ledger: Map<string, PointsLine[]>; // Phase 4: each home's points lines for the demo day (pending + settled)
+  settlements: Map<string, Settlement>; // Phase 4: one per settled home (plan day)
+  settlementSummary: SettlementSummary | null; // Phase 4: null until "Simulate Monday's meter reads"
 }
 
 const globalStore = globalThis as unknown as { __gridshiftStore?: StoreState };
@@ -22,6 +26,8 @@ function seed(): StoreState {
     events: [],
     nextEventId: 1,
     ledger: new Map(),
+    settlements: new Map(),
+    settlementSummary: null,
   };
 }
 
@@ -99,6 +105,19 @@ export function getLedger(householdId: string): PointsLine[] {
 
 export function setLedger(householdId: string, lines: PointsLine[]): void {
   state().ledger.set(householdId, lines);
+}
+
+export function getSettlement(householdId: string): Settlement | undefined {
+  return state().settlements.get(householdId);
+}
+
+export function getSettlementSummary(): SettlementSummary | null {
+  return state().settlementSummary;
+}
+
+export function saveSettlement(settlements: Settlement[], summary: SettlementSummary): void {
+  for (const s of settlements) state().settlements.set(s.householdId, s);
+  state().settlementSummary = summary;
 }
 
 export function getEvent(id: string): FlexEvent | undefined {

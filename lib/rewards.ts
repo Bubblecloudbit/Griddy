@@ -1,10 +1,10 @@
 // lib/rewards.ts — turn a commit into points lines (owner: A). PHASE4.md §4.
 // Uses the area's actual schedule, so "planned out of peak" matches what the forecast shows.
-import type { FlexEvent, FlexTask, Hour, Household, PointsLine } from "@/lib/types";
+import type { FlexEvent, FlexTask, Hour, Household, MyStatus, PointsLine } from "@/lib/types";
 import { DEFAULT_RATE } from "@/lib/rates";
-import { peakKWh, windowKWh } from "@/lib/optimizer";
+import { energyCost, peakKWh, windowKWh } from "@/lib/optimizer";
 import { planArea } from "@/lib/forecast";
-import { getEvent, getLedger, getNeighborhood, setLedger } from "@/lib/store";
+import { getEvent, getLedger, getNeighborhood, getSettlement, setLedger } from "@/lib/store";
 import {
   capLines, commitLine, contributionLine, isVerified, pendingEventLine, pendingShiftLine, total,
 } from "@/lib/points";
@@ -36,6 +36,30 @@ export function eventShiftKWh(tasks: FlexTask[], startOf: (t: FlexTask) => Hour,
 export function plannedStarts(home: Household): (t: FlexTask) => Hour {
   const area = planArea(getNeighborhood(home.neighborhoodId)!, true);
   return (t) => area.startOf.get(t) ?? t.earliestStart;
+}
+
+// The customer's own status for the app (GET /api/me). Only this home's data.
+export function myStatus(home: Household): MyStatus {
+  const ledger = getLedger(home.id);
+  return {
+    points: home.points,
+    setup: home.setup,
+    reliability: isVerified(home.setup?.verification) ? home.reliability : undefined,
+    pending: ledger.filter((l) => l.status === "pending"),
+    history: ledger.filter((l) => l.status === "settled"),
+    settlement: getSettlement(home.id),
+    touComparison: home.tasks.length ? touComparison(home) : undefined,
+  };
+}
+
+// Illustrative: this plan's monthly cost on the flat standard rate vs. on time-of-use
+// with GridShift's start times (plan × 30 days).
+function touComparison(home: Household): { flatMonthly: number; touMonthly: number } {
+  const startOf = plannedStarts(home);
+  const flatRate = DEFAULT_RATE.flatRate ?? DEFAULT_RATE.offPeak;
+  const flat = home.tasks.reduce((s, t) => s + t.kWh * flatRate, 0);
+  const tou = home.tasks.reduce((s, t) => s + energyCost(t, startOf(t), DEFAULT_RATE), 0);
+  return { flatMonthly: Math.round(flat * 30 * 100) / 100, touMonthly: Math.round(tou * 30 * 100) / 100 };
 }
 
 // Awards a commit: commit points (once a day), contribution for self-reported homes,

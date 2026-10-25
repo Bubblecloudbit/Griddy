@@ -44,8 +44,8 @@ const LAST_HOUR = HORIZON_HOURS; // deadlines are exclusive, so 72 = end of Tues
 
 const SEEDED_TRIP: Omit<Trip, "id"> = { label: "Trip", startDate: "2026-10-29", endDate: "2026-10-31" }; // Thu–Sat
 
-// mulberry32: tiny seeded PRNG returning floats in [0, 1).
-function mulberry32(seed: number): () => number {
+// mulberry32: tiny seeded PRNG returning floats in [0, 1). Also used by lib/settlement.ts.
+export function mulberry32(seed: number): () => number {
   let a = seed >>> 0;
   return () => {
     a = (a + 0x6d2b79f5) >>> 0;
