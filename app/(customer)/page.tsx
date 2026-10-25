@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import type { CustomerSetup, FlexEvent, FlexTask, MyStatus, RatePlan, ScheduledTask, Trip, WeeklyRoutine } from "@/lib/types";
 import { Nav, useToast } from "@/components/ui";
 import { MOCK_HOUSEHOLD, MOCK_ROUTINE } from "@/lib/mock";
-import { optimize, commitPlan, getEvents, getMe, getRates } from "@/components/customer/client";
+import { optimize, commitPlan, getEvents, getMe, getRates, saveSetup } from "@/components/customer/client";
 import { AppShell, type Tab } from "@/components/customer/AppShell";
 import { DayRibbon } from "@/components/customer/DayRibbon";
 import { BestTime } from "@/components/customer/TodaySummary";
@@ -15,7 +15,7 @@ import { WeekTab } from "@/components/customer/WeekTab";
 import { FlexEventBanner } from "@/components/customer/FlexEventBanner";
 import { CommandBar } from "@/components/customer/CommandBar";
 import { RewardsTab } from "@/components/customer/RewardsTab";
-import { SetupCard, toSetup, type SetupChoice } from "@/components/customer/SetupCard";
+import { SetupCard, SetupSummary, fromSetup, toSetup, type SetupChoice } from "@/components/customer/SetupCard";
 import { ValueCard } from "@/components/customer/ValueCard";
 import { SettlementCard } from "@/components/customer/SettlementCard";
 import { CardSkeleton } from "@/components/customer/Skeleton";
@@ -45,7 +45,14 @@ export default function CustomerPage() {
   const [setupChoice, setSetupChoice] = useState<Partial<SetupChoice>>({});
   const [setupDismissed, setSetupDismissed] = useState(false);
   const [status, setStatus] = useState<MyStatus | null>(null);
+  const [savingSetup, setSavingSetup] = useState(false);
   const { showToast, toast } = useToast();
+
+  // After a reload, show the setup that's on file instead of an empty card.
+  const savedSetup = status?.setup;
+  useEffect(() => {
+    if (savedSetup) setSetupChoice((c) => (c.rate === undefined && c.measure === undefined ? fromSetup(savedSetup) : c));
+  }, [savedSetup]);
 
   useEffect(() => {
     getRates()
@@ -78,9 +85,22 @@ export default function CustomerPage() {
     setCommitted(false);
   }
 
-  function changeSetup(next: Partial<SetupChoice>) {
+  // Saves as soon as both answers are picked and differ from what's on file. If a plan is
+  // already committed, the server refreshes its pending points for the new setup.
+  async function changeSetup(next: Partial<SetupChoice>) {
     setSetupChoice(next);
-    setCommitted(false);
+    if (next.rate === undefined || next.measure === undefined) return;
+    const s = toSetup(next as SetupChoice);
+    if (savedSetup && s.rate === savedSetup.rate && s.verification === savedSetup.verification) return;
+    setSavingSetup(true);
+    try {
+      setStatus(await saveSetup(s));
+      if (savedSetup) showToast("Setup updated");
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : "Could not save setup.");
+    } finally {
+      setSavingSetup(false);
+    }
   }
 
   // Items the user confirmed from the command bar.
@@ -132,8 +152,9 @@ export default function CustomerPage() {
       <Nav />
       <AppShell tab={tab} onTab={setTab} points={status?.points ?? MOCK_HOUSEHOLD.points}>
         {tab === "today" && showSetupPrompt && (
-          <SetupCard choice={setupChoice} onChange={changeSetup} onDismiss={() => setSetupDismissed(true)} />
+          <SetupCard choice={setupChoice} onChange={changeSetup} onDismiss={() => setSetupDismissed(true)} saved={savedSetup} saving={savingSetup} />
         )}
+        {tab === "today" && savedSetup && <SetupSummary setup={savedSetup} onChange={() => setTab("week")} />}
         {tab === "today" && <CommandBar onConfirm={addFromCoach} />}
         {tab === "today" &&
           (rate ? (
@@ -183,6 +204,8 @@ export default function CustomerPage() {
             routine={routine}
             trips={trips}
             setup={setupChoice}
+            savedSetup={savedSetup}
+            savingSetup={savingSetup}
             onRoutineChange={(r) => {
               setRoutine(r);
               setCommitted(false);

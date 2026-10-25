@@ -4,7 +4,7 @@
 
 import { useState } from "react";
 import { Plane, Plus, X } from "lucide-react";
-import type { Trip, WeeklyRoutine } from "@/lib/types";
+import type { CustomerSetup, Trip, WeeklyRoutine } from "@/lib/types";
 import { DAY_NAMES } from "@/lib/config";
 import { ROUTINE_PRESETS } from "@/lib/routines";
 import { Button, Card } from "@/components/ui";
@@ -15,6 +15,8 @@ interface Props {
   routine: WeeklyRoutine;
   trips: Trip[];
   setup: Partial<SetupChoice>;
+  savedSetup?: CustomerSetup;
+  savingSetup?: boolean;
   onRoutineChange: (routine: WeeklyRoutine) => void;
   onTripsChange: (trips: Trip[]) => void;
   onSetupChange: (setup: Partial<SetupChoice>) => void;
@@ -36,10 +38,10 @@ function HourSelect({ value, from, to, onChange }: { value: number; from: number
   );
 }
 
-export function WeekTab({ routine, trips, setup, onRoutineChange, onTripsChange, onSetupChange }: Props) {
+export function WeekTab({ routine, trips, setup, savedSetup, savingSetup, onRoutineChange, onTripsChange, onSetupChange }: Props) {
   return (
     <>
-      <SetupCard choice={setup} onChange={onSetupChange} />
+      <SetupCard choice={setup} onChange={onSetupChange} saved={savedSetup} saving={savingSetup} />
       <RoutineCard routine={routine} onChange={onRoutineChange} />
       <WeekStrip routine={routine} trips={trips} />
       <TripsCard trips={trips} onChange={onTripsChange} />

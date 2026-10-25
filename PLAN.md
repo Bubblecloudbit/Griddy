@@ -137,6 +137,7 @@ interface RegionReference { label: string; source: string; date: string; demandM
 | POST | `/api/coach` | `{ message }` → `{ reply, tasks?, trips?, flags?, setup? }` | 2 / 4 |
 | ~~POST~~ | ~~`/api/simulate`~~ | removed (delete the stub route) | — |
 | GET | `/api/me?householdId=h-jordan` | → `MyStatus` (the customer's own points, pending/settled lines, settlement, TOU comparison) | 4 |
+| POST | `/api/setup` | `{ householdId, setup }` → `MyStatus` (change setup any time; refreshes pending points if a plan is committed and Monday isn't settled) | 4 |
 | POST | `/api/settle` | `{ day: 1 }` → `SettlementSummary` (idempotent; reset clears) | 4 |
 | GET | `/api/settlement` | → `SettlementSummary` (`settled: false` before) | 4 |
 | GET | `/api/intake` | → `IntakeStats` | 4 |

@@ -1,5 +1,6 @@
 // components/customer/SetupCard.tsx — "Your setup": rate + how usage is measured (owner: B, PLAN.md §7a)
-// "Not sure" counts as the standard rate / not measurable. Saved with the next plan commit.
+// "Not sure" counts as the standard rate / not measurable. Saved as soon as both answers are
+// picked (POST /api/setup), and sent with the next plan commit too.
 "use client";
 
 import type { CustomerSetup, RateType, Verification } from "@/lib/types";
@@ -52,18 +53,53 @@ function Choices<T extends string>({ options, value, onChange }: { options: { va
   );
 }
 
-interface Props {
-  choice: Partial<SetupChoice>;
-  onChange: (c: Partial<SetupChoice>) => void;
-  onDismiss?: () => void; // Today's one-time prompt can be closed
+// The saved setup back as card choices (so the card shows what's on file after a reload).
+export function fromSetup(s: CustomerSetup): SetupChoice {
+  return { rate: s.rate, measure: s.verification };
 }
 
-export function SetupCard({ choice, onChange, onDismiss }: Props) {
+const RATE_TEXT: Record<RateType, string> = { flat: "Standard rate", tou: "Time-of-use" };
+const MEASURE_TEXT: Record<Verification, string> = { smart_meter: "Smart meter", device: "Smart charger or thermostat", none: "Not measured" };
+
+function sameSetup(a?: CustomerSetup, b?: CustomerSetup): boolean {
+  return !!a && !!b && a.rate === b.rate && a.verification === b.verification;
+}
+
+// One line on Today once a setup is on file: "Your setup: Standard rate · Smart meter  Change".
+export function SetupSummary({ setup, onChange }: { setup: CustomerSetup; onChange: () => void }) {
+  return (
+    <div className="flex items-center justify-between gap-2 text-caption text-ink-muted">
+      <span>
+        Your setup: <span className="text-ink">{RATE_TEXT[setup.rate]} · {MEASURE_TEXT[setup.verification]}</span>
+      </span>
+      <Button variant="quiet" className="px-2 py-1 text-caption" onClick={onChange}>Change</Button>
+    </div>
+  );
+}
+
+interface Props {
+  choice: Partial<SetupChoice>;
+  onChange: (c: Partial<SetupChoice>) => void; // the page saves as soon as both answers are picked
+  onDismiss?: () => void; // Today's one-time prompt can be closed
+  saved?: CustomerSetup; // what's on file
+  saving?: boolean;
+}
+
+export function SetupCard({ choice, onChange, onDismiss, saved, saving }: Props) {
+  const complete = choice.rate !== undefined && choice.measure !== undefined;
+  const isSaved = complete && sameSetup(toSetup(choice as SetupChoice), saved);
   return (
     <Card
       title="Your setup"
-      explainer="Tells Griddy what you can earn. Saved with your next plan commit."
+      explainer="Tells Griddy what you can earn. Change it any time; it saves right away."
       action={onDismiss && <Button variant="quiet" className="px-2 py-1 text-caption" onClick={onDismiss}>Later</Button>}
+      footer={
+        saving ? (
+          <p className="text-caption text-ink-muted">Saving…</p>
+        ) : isSaved ? (
+          <p className="text-caption text-ink-muted">Saved. Pending points follow your setup.</p>
+        ) : undefined
+      }
     >
       <div className="space-y-3">
         <div className="space-y-1.5">

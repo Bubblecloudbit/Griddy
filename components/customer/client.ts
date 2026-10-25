@@ -61,6 +61,11 @@ export async function commitPlan(plan: PlanCommit): Promise<CommitResult> {
   return post<CommitResult>("/api/plan", { householdId: HOUSEHOLD_ID, flags: [], ...plan });
 }
 
+// Change Jordan's setup right away (no plan commit needed). Returns the refreshed status.
+export async function saveSetup(setup: CustomerSetup): Promise<MyStatus> {
+  return post<MyStatus>("/api/setup", { householdId: HOUSEHOLD_ID, setup });
+}
+
 // Jordan's own status: points, pending vs. settled lines, settlement, TOU comparison. Polled every 5 s.
 export async function getMe(): Promise<MyStatus> {
   return get<MyStatus>(`/api/me?householdId=${HOUSEHOLD_ID}`);
