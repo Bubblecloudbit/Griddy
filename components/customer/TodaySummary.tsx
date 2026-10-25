@@ -16,12 +16,12 @@ export function bestTimeText(rate: RatePlan, day: number = PLAN_DAY): string {
 
 export function BestTime({ rate }: { rate: RatePlan }) {
   return (
-    <div className="flex items-end justify-between gap-3">
+    <div className="flex items-center justify-between gap-3 rounded-card bg-brand-wash px-5 py-4">
       <div>
-        <p className="text-caption text-ink-muted">Best time to run things</p>
-        <p className="text-h2 text-ink">{bestTimeText(rate)}</p>
+        <p className="eyebrow text-brand">Best time to run things</p>
+        <p className="mt-1 font-display text-[22px] font-semibold leading-7 text-ink">{bestTimeText(rate)}</p>
       </div>
-      <Tag kind="OFF-PEAK" />
+      <Tag kind="OFF-PEAK" className="bg-surface" />
     </div>
   );
 }

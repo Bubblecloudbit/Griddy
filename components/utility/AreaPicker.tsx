@@ -21,7 +21,7 @@ export function AreaPicker({ value, onChange }: { value: Scope; onChange: (scope
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="appearance-none rounded-control border border-line bg-surface py-1.5 pl-3 pr-8 text-body text-ink hover:border-ink"
+        className="appearance-none rounded-control border border-line bg-surface py-1.5 pl-3 pr-8 text-body font-medium text-ink hover:border-ink-muted focus:border-brand focus:outline-none"
       >
         {AREA_OPTIONS.map((a) => (
           <option key={a.id} value={a.id}>

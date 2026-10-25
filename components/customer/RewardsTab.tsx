@@ -18,8 +18,8 @@ interface Props {
 export function RewardsTab({ points, history, onPlan }: Props) {
   return (
     <>
-      <Card title="GridPoints" explainer="Earn 10 points each time you commit a plan. Flex Events multiply them.">
-        <p className="font-mono text-display text-ink">{points.toLocaleString("en-US")}</p>
+      <Card tone="brand" eyebrow="GridPoints" title="Your balance" explainer="Earn 10 points each time you commit a plan. Flex Events multiply them.">
+        <p className="font-display text-[44px] font-semibold leading-none text-brand">{points.toLocaleString("en-US")}</p>
       </Card>
 
       <Card title="History">
@@ -30,7 +30,7 @@ export function RewardsTab({ points, history, onPlan }: Props) {
             {[...history].reverse().map((e) => (
               <li key={e.id} className="flex items-center justify-between gap-3 py-2">
                 <span className="text-body text-ink">{e.label}</span>
-                <span className="font-mono text-body text-plan">+{e.points}</span>
+                <span className="text-body font-semibold text-plan">+{e.points}</span>
               </li>
             ))}
           </ul>

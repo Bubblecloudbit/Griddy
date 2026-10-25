@@ -13,7 +13,7 @@ function EventRow({ event, view }: { event: FlexEvent; view: EventsView }) {
   return (
     <li className="space-y-1 border-t border-line py-3 first:border-t-0 first:pt-0">
       <div className="flex items-baseline justify-between gap-3">
-        <span className="font-mono text-h2 text-ink">
+        <span className="font-display text-h2 text-ink">
           {rangeLabel(event.startHour, event.endHour)} · {event.multiplier}× points
         </span>
         <Tag kind="SIMULATED" />

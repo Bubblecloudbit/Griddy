@@ -10,7 +10,7 @@ export const DEFAULT_EV_ADOPTION = 0.35; // fraction of homes with an EV to char
 export const DEMO_HOUSEHOLD_ID = "h-jordan"; // the customer-app demo home, in n1
 
 const TRANSFORMER_CAPACITY_KW = 200; // internal normalizer for the optimizer; never displayed
-const ENROLLED_SHARE = 0.6; // homes already committing GridShift plans
+const ENROLLED_SHARE = 0.6; // homes already committing Griddy plans
 const TRIP_SHARE = 0.12; // homes with a seeded Thu–Sat trip
 const AWAY_FACTOR = 0.5; // an empty home still draws fridge, HVAC, standby
 

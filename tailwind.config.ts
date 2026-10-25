@@ -26,11 +26,12 @@ const config: Config = {
       fontFamily: {
         sans: ["var(--font-plex-sans)", "system-ui", "sans-serif"],
         mono: ["var(--font-plex-mono)", "ui-monospace", "monospace"],
+        display: ["var(--font-display)", "var(--font-plex-sans)", "system-ui", "sans-serif"],
       },
       fontSize: {
-        display: ["32px", { lineHeight: "36px", fontWeight: "600" }],
-        h1: ["22px", { lineHeight: "28px", fontWeight: "600" }],
-        h2: ["15px", { lineHeight: "20px", fontWeight: "600" }],
+        display: ["34px", { lineHeight: "38px", fontWeight: "600" }],
+        h1: ["30px", { lineHeight: "36px", fontWeight: "600" }],
+        h2: ["17px", { lineHeight: "22px", fontWeight: "600" }],
         body: ["14px", { lineHeight: "20px", fontWeight: "400" }],
         caption: ["12px", { lineHeight: "16px", fontWeight: "400" }],
         tag: ["11px", { lineHeight: "14px", fontWeight: "600", letterSpacing: "0.04em" }],

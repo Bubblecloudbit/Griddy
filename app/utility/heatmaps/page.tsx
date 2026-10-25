@@ -4,7 +4,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { Card, InfoTip, Segmented, Tag } from "@/components/ui";
+import { Card, InfoTip, PageHeader, Segmented, Tag } from "@/components/ui";
 import { DEFAULT_RATE } from "@/lib/rates";
 import { PLAN_DAY, dayLabel, isWeekend } from "@/lib/config";
 import type { Heatmap } from "@/lib/types";
@@ -21,6 +21,11 @@ type Metric = Heatmap["metric"];
 const FIRST_PROJECTED_DAY = 2; // Tue: Sun–Mon are scheduled, Tue–Sat projected (lib/outlook.ts)
 const TRIP_DAYS: [number, number] = [4, 6]; // Thu Oct 29 – Sat Oct 31: the seeded trips (lib/community.ts)
 const PEAK_COLS: [number, number] = [Math.min(...DEFAULT_RATE.peakHours), Math.max(...DEFAULT_RATE.peakHours)];
+
+const TITLE: Record<View, string> = {
+  area_hour: `Load by area and hour · ${dayLabel(PLAN_DAY)}`,
+  day_hour: "Load by day and hour · next 7 days",
+};
 
 const EXPLAINER: Record<View, string> = {
   area_hour: `Each row is one area on ${dayLabel(PLAN_DAY)}. Each cell = 5+ homes.`,
@@ -54,9 +59,12 @@ export default function HeatmapsPage() {
       : null;
 
   return (
-    <div className="space-y-4">
-      <header className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-h1">Heat maps</h1>
+    <div className="space-y-6">
+      <PageHeader
+        eyebrow="AEP · Residential flexibility"
+        title="Heat maps"
+        lead="Where and when residential load is planned, by area or by day."
+        action={
         <div className="flex flex-wrap items-center gap-2">
           <Segmented<View>
             ariaLabel="View"
@@ -77,17 +85,18 @@ export default function HeatmapsPage() {
             onChange={setMetric}
           />
         </div>
-      </header>
+        }
+      />
 
       <Card
-        title="Where and when residential load is planned"
+        title={TITLE[view]}
         explainer={EXPLAINER[view]}
         action={
           <>
             <Tag kind="SIMULATED" />
             <InfoTip>
-              Change compares committed GridShift plans with a baseline where everyone runs things when they get home.
-              Teal means load moved away from that hour; amber means load was added.
+              Change compares committed Griddy plans with a baseline where everyone runs things when they get home.
+              Green means load moved away from that hour; amber means load was added.
             </InfoTip>
           </>
         }
@@ -111,7 +120,9 @@ export default function HeatmapsPage() {
               tooltipRowLabel={(r) => (view === "area_hour" ? `${loadMap.rows[r]} · ${dayLabel(PLAN_DAY).slice(0, 3)}` : loadMap.rows[r])}
             />
             <HeatmapLegend metric={metric} load={loadMap.values} change={changeMap.values} />
-            {takeaway && <p className="border-t border-line pt-3 text-body text-ink">▸ {takeaway}</p>}
+            {takeaway && (
+              <p className="rounded-control bg-brand-wash px-4 py-3 text-body font-medium text-ink">{takeaway}</p>
+            )}
           </div>
         )}
       </Card>

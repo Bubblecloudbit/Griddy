@@ -5,6 +5,7 @@
 "use client";
 
 import { useState } from "react";
+import { PageHeader } from "@/components/ui";
 import { KpiStrip } from "@/components/utility/KpiStrip";
 import { ProjectedLoadChart } from "@/components/utility/ProjectedLoadChart";
 import { ZoneContextChart } from "@/components/utility/ZoneContextChart";
@@ -17,7 +18,11 @@ export default function OverviewPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-h1">Overview</h1>
+      <PageHeader
+        eyebrow="AEP · Residential flexibility"
+        title="Overview"
+        lead="Customer plans turned into tomorrow's residential load, before it happens. Aggregates of 5+ homes only."
+      />
       <KpiStrip />
       <ProjectedLoadChart scope={scope} onScopeChange={setScope} />
       <div className="grid gap-6 xl:grid-cols-3">

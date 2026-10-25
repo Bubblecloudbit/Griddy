@@ -1,5 +1,5 @@
 // lib/forecast.ts — aggregate household plans into utility forecasts (owner: A)
-// baselineKW = what happens without GridShift: every task runs at its earliest start.
+// baselineKW = what happens without Griddy: every task runs at its earliest start.
 // plannedKW  = committed intent: enrolled homes' tasks at optimized starts, everyone else's
 //              at plug-in, plus away/high-load flags.
 // expectedKW = what AEP should plan on: each home's change weighted by confidence (Phase 4).
@@ -81,7 +81,7 @@ function homeDelta(home: Household, startOf: Map<FlexTask, Hour>): number[] {
 export function planArea(n: Neighborhood, coordinated: boolean): AreaPlan {
   const homes: Household[] = householdsIn(n.id);
   const baseline = zeros();
-  const fixedPlanned = zeros(); // load GridShift can't move: non-flexible load (with flags) + non-enrolled tasks
+  const fixedPlanned = zeros(); // load Griddy can't move: non-flexible load (with flags) + non-enrolled tasks
   const startOf = new Map<FlexTask, Hour>();
 
   for (const home of homes) {
@@ -90,7 +90,7 @@ export function planArea(n: Neighborhood, coordinated: boolean): AreaPlan {
     for (const task of home.tasks) {
       addTaskLoad(baseline, task, task.earliestStart);
       if (!home.enrolled) {
-        addTaskLoad(fixedPlanned, task, task.earliestStart); // not in GridShift: runs at plug-in
+        addTaskLoad(fixedPlanned, task, task.earliestStart); // not in Griddy: runs at plug-in
         startOf.set(task, task.earliestStart);
       }
     }

@@ -17,20 +17,20 @@ export function HeatmapLegend({ metric, load, change }: { metric: "load" | "chan
     <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-caption text-ink-muted">
       {metric === "load" ? (
         <span className="inline-flex items-center gap-2">
-          <span className="font-mono">0</span>
+          <span className="font-semibold text-ink">0</span>
           <Swatches colors={heatLoad} />
-          <span className="font-mono">{formatInt(maxLoad(load))} kW</span>
+          <span className="font-semibold text-ink">{formatInt(maxLoad(load))} kW</span>
           <span>planned</span>
         </span>
       ) : (
         <span className="inline-flex items-center gap-2">
           <span>Load moved away</span>
-          <span className="font-mono">
+          <span className="font-semibold text-ink">
             {isCapped(change) && "≤"}
             {formatPct(-changeSpan(change))}
           </span>
           <Swatches colors={heatChange} />
-          <span className="font-mono">
+          <span className="font-semibold text-ink">
             {isCapped(change) && "≥"}
             {formatPct(changeSpan(change))}
           </span>
@@ -38,11 +38,11 @@ export function HeatmapLegend({ metric, load, change }: { metric: "load" | "chan
         </span>
       )}
       <span className="inline-flex items-center gap-2">
-        <span className="hatch-hidden h-3 w-6 rounded-tag border border-line" />
+        <span className="hatch-hidden h-3 w-6 rounded-[3px] border border-line" />
         Hidden for privacy (fewer than 5 homes)
       </span>
       <span className="inline-flex items-center gap-2">
-        <span className="h-3 w-6 rounded-tag border-2 border-peak" />
+        <span className="h-3 w-6 rounded-[3px] border-2 border-peak" />
         Peak 2–6 PM
       </span>
     </div>

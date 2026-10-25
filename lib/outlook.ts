@@ -32,7 +32,7 @@ function addTask(load: number[], task: FlexTask, start: number): void {
 }
 
 export interface WeekOutlook {
-  baseline: number[]; // 168 h, kW: no GridShift, no knowledge of trips
+  baseline: number[]; // 168 h, kW: no Griddy, no knowledge of trips
   planned: number[]; // 168 h, kW: committed plans, routines, and trips
 }
 

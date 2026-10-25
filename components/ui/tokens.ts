@@ -1,29 +1,36 @@
-// components/ui/tokens.ts — GridShift design tokens (owner: C). Source: DESIGN.md §2.
+// components/ui/tokens.ts — Griddy design tokens (owner: C). Source: DESIGN.md §2.
 // One source of truth: tailwind.config.ts imports these, and Recharts code (which needs
 // raw hex values, not class names) imports them too. Don't add colors anywhere else.
+//
+// Direction: utility-grade, like AEP's own site. White surfaces on a cool light gray,
+// charcoal ink, one strong brand green for actions and navigation, pastel tinted panels.
 
 export const colors = {
-  paper: "#F7F6F2", // page background
+  paper: "#F3F4F2", // page background (cool light gray)
   surface: "#FFFFFF", // cards
-  line: "#E4E1D8", // borders, dividers, gridlines
-  ink: "#14213D", // primary text, headings, primary button
-  "ink-muted": "#5B6474", // secondary text, axis labels
+  line: "#D9DDDB", // borders, dividers, gridlines
+  ink: "#1F2A30", // primary text, headings
+  "ink-muted": "#5D6970", // secondary text, axis labels
+  brand: "#0B7A3E", // primary actions, active nav, brand mark
+  "brand-dark": "#075C2E", // hover/pressed on brand
+  "brand-wash": "#E6F1E3", // tinted panels, active nav background
+  "brand-spark": "#B8F05A", // logo only: the "shifted" cell in the Griddy mark
   peak: "#C2410C", // peak hours, "avoid", increases
   "peak-wash": "#FCEBDD", // peak band fill, peak badges
-  plan: "#0F766E", // off-peak, recommended times, decreases, savings
-  "plan-wash": "#E2F1EE", // off-peak fill, success badges
-  baseline: "#9AA3AE", // "if nothing changed" lines (dashed)
-  real: "#3557A0", // external real data (PJM/EIA)
-  "real-wash": "#E7EDF8", // real-data tag background
+  plan: "#0B7A3E", // off-peak, recommended times, decreases, savings (same green as brand)
+  "plan-wash": "#E6F1E3", // off-peak fill, success badges
+  baseline: "#98A2A8", // "if nothing changed" lines (dashed)
+  real: "#2D5F8B", // external real data (PJM/EIA)
+  "real-wash": "#DCE7F0", // real-data tag background, info panels
   danger: "#B42318", // errors only
 } as const;
 
 // Heat map scales, 5 steps each, low → high. Never rainbow.
-export const heatLoad = ["#EEF1F6", "#C9D3E6", "#8FA2C8", "#4F6699", "#14213D"] as const;
-// Diverging, neutral center: teal = load moved away, amber = load added.
-export const heatChange = ["#0F766E", "#7FBDB5", "#F2F0EA", "#E8A983", "#C2410C"] as const;
+export const heatLoad = ["#EDF2F6", "#C3D4E3", "#86A6C3", "#3F6F99", "#1F2A30"] as const;
+// Diverging, neutral center: green = load moved away, amber = load added.
+export const heatChange = ["#0B7A3E", "#86C29B", "#F1F2EF", "#E8A983", "#C2410C"] as const;
 
-export const radius = { card: "10px", control: "8px", tag: "4px" } as const;
+export const radius = { card: "6px", control: "6px", tag: "999px" } as const;
 
 export const motion = { fast: 150, chart: 300 } as const; // ms, ease-out, no bounce
 
@@ -31,4 +38,5 @@ export const motion = { fast: 150, chart: 300 } as const; // ms, ease-out, no bo
 export const fontVars = {
   sans: "var(--font-plex-sans)",
   mono: "var(--font-plex-mono)",
+  display: "var(--font-display)",
 } as const;

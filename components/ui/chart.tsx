@@ -19,7 +19,7 @@ export const gridProps = { vertical: false, stroke: colors.line } as const;
 export const axisProps = {
   axisLine: false,
   tickLine: false,
-  tick: { fontSize: 11, fill: colors["ink-muted"], fontFamily: fontVars.mono },
+  tick: { fontSize: 11, fill: colors["ink-muted"], fontFamily: fontVars.sans },
 } as const;
 
 // Ticks every 3 hours between two horizon hours (inclusive): 12a 3a 6a …
@@ -44,7 +44,7 @@ export function peakBandProps(startHour: number, endHour: number, label = "Peak 
     fill: colors["peak-wash"],
     fillOpacity: 1,
     stroke: "none",
-    label: { value: label, position: "insideTop" as const, fill: colors.peak, fontSize: 11, fontFamily: fontVars.mono },
+    label: { value: label, position: "insideTop" as const, fill: colors.peak, fontSize: 11, fontWeight: 600, fontFamily: fontVars.sans },
   };
 }
 
@@ -92,7 +92,7 @@ export function ChartTooltip({ active, payload, label, unit = "", titleFormatter
   const title = titleFormatter ? titleFormatter(label) : hourTitle(Number(label));
   return (
     <div className="rounded-control border border-line bg-surface px-3 py-2 text-caption shadow-popover">
-      <div className="mb-1 font-medium text-ink">{title}</div>
+      <div className="mb-1.5 font-semibold text-ink">{title}</div>
       {payload.map((row, i) => (
         <div key={i} className="flex items-center justify-between gap-4">
           <span className="flex items-center gap-1.5 text-ink-muted">

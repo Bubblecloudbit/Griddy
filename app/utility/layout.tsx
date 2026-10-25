@@ -12,7 +12,7 @@ export default function UtilityLayout({ children }: { children: ReactNode }) {
         <Sidebar />
         <div className="flex min-w-0 flex-1 flex-col">
           <TopBar />
-          <main className="mx-auto w-full max-w-[1280px] flex-1 px-6 py-6">{children}</main>
+          <main className="mx-auto w-full max-w-[1280px] flex-1 px-8 py-8">{children}</main>
         </div>
       </div>
     </div>

@@ -21,7 +21,7 @@ const PRESET_IDS = Object.keys(ROUTINE_PRESETS) as WeeklyRoutine["preset"][];
 const WEEKDAYS = [1, 2, 3, 4, 5];
 
 const controlClass =
-  "rounded-control border border-line bg-surface px-2 py-1 font-mono text-caption text-ink focus:border-ink focus:outline-none";
+  "rounded-control border border-line bg-surface px-2.5 py-1.5 text-body text-ink hover:border-ink-muted focus:border-brand focus:outline-none";
 
 function HourSelect({ value, from, to, onChange }: { value: number; from: number; to: number; onChange: (h: number) => void }) {
   return (
@@ -59,7 +59,7 @@ function RoutineCard({ routine, onChange }: { routine: WeeklyRoutine; onChange: 
           <Button
             key={id}
             variant={routine.preset === id ? "primary" : "secondary"}
-            className="px-2.5 py-1 text-caption"
+            className="rounded-full px-3 py-1 text-caption"
             aria-pressed={routine.preset === id}
             onClick={() => onChange(ROUTINE_PRESETS[id].routine)}
           >
@@ -101,7 +101,7 @@ function WeekStrip({ routine, trips }: { routine: WeeklyRoutine; trips: Trip[] }
             <div key={iso} className="flex flex-col items-center gap-1">
               <span className="text-caption text-ink-muted">{DAY_NAMES[d % 7]}</span>
               <div
-                className={`relative flex h-12 w-full items-center justify-center overflow-hidden rounded-tag border border-line ${
+                className={`relative flex h-12 w-full items-center justify-center overflow-hidden rounded-[4px] border border-line ${
                   trip ? "bg-plan-wash text-plan" : "bg-paper"
                 }`}
                 title={trip ? trip.label : undefined}
@@ -118,7 +118,7 @@ function WeekStrip({ routine, trips }: { routine: WeeklyRoutine; trips: Trip[] }
                   ))
                 )}
               </div>
-              <span className="font-mono text-caption text-ink-muted">{Number(iso.slice(8))}</span>
+              <span className="text-caption font-medium text-ink">{Number(iso.slice(8))}</span>
             </div>
           );
         })}
@@ -151,7 +151,7 @@ function TripsCard({ trips, onChange }: { trips: Trip[]; onChange: (trips: Trip[
           {trips.map((t) => (
             <li key={t.id} className="flex items-center justify-between gap-2 py-2">
               <span className="text-body text-ink">
-                {t.label} · <span className="font-mono">{dateLabel(t.startDate)} – {dateLabel(t.endDate)}</span>
+                {t.label} · <span className="text-ink-muted">{dateLabel(t.startDate)} – {dateLabel(t.endDate)}</span>
               </span>
               <button
                 type="button"
@@ -169,7 +169,7 @@ function TripsCard({ trips, onChange }: { trips: Trip[]; onChange: (trips: Trip[
       <div className="mt-3 grid grid-cols-2 gap-2 border-t border-line pt-3">
         <label className="col-span-2 flex flex-col gap-1 text-caption text-ink-muted">
           Name
-          <input className={`${controlClass} font-sans`} value={label} onChange={(e) => setLabel(e.target.value)} />
+          <input className={controlClass} value={label} onChange={(e) => setLabel(e.target.value)} />
         </label>
         <label className="flex flex-col gap-1 text-caption text-ink-muted">
           From

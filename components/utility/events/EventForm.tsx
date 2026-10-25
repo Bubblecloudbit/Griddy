@@ -22,7 +22,7 @@ function suggestedMessage(start: number, end: number, multiplier: number): strin
   return `Shift load out of ${rangeLabel(start, end)} and earn ${multiplier}× GridPoints.`;
 }
 
-const selectClass = "rounded-control border border-line bg-surface px-2 py-1.5 font-mono text-body text-ink";
+const selectClass = "rounded-control border border-line bg-surface px-3 py-2 text-body text-ink hover:border-ink-muted focus:border-brand focus:outline-none";
 
 export function EventForm({ onCreated }: { onCreated: (label: string) => void }) {
   const [day, setDay] = useState("1"); // Mon Oct 26, the plan day
@@ -57,33 +57,33 @@ export function EventForm({ onCreated }: { onCreated: (label: string) => void })
     <Card title="Create a Flex Event" explainer="Ask customers to shift load out of a window. Rewards are GridPoints, not money.">
       <div className="space-y-4">
         <div className="space-y-1">
-          <div className="text-caption text-ink-muted">Day</div>
+          <div className="eyebrow">Day</div>
           <Segmented ariaLabel="Day" options={DAYS} value={day} onChange={setDay} />
         </div>
 
         <div className="flex flex-wrap gap-4">
           <label className="space-y-1">
-            <div className="text-caption text-ink-muted">Start</div>
+            <div className="eyebrow">Start</div>
             <select className={selectClass} value={startClock} onChange={(e) => setStartClock(Number(e.target.value))}>
               {START_CLOCKS.map((c) => <option key={c} value={c}>{clockLabel(c)}</option>)}
             </select>
           </label>
           <label className="space-y-1">
-            <div className="text-caption text-ink-muted">End</div>
+            <div className="eyebrow">End</div>
             <select className={selectClass} value={endClock} onChange={(e) => setEndClock(Number(e.target.value))}>
               {END_CLOCKS.map((c) => <option key={c} value={c}>{clockLabel(c)}</option>)}
             </select>
           </label>
           <div className="space-y-1">
-            <div className="text-caption text-ink-muted">GridPoints multiplier</div>
+            <div className="eyebrow">GridPoints multiplier</div>
             <Segmented ariaLabel="GridPoints multiplier" options={MULTIPLIERS} value={multiplier} onChange={setMultiplier} />
           </div>
         </div>
 
         <label className="block space-y-1">
-          <div className="text-caption text-ink-muted">Message to customers</div>
+          <div className="eyebrow">Message to customers</div>
           <textarea
-            className="w-full rounded-control border border-line bg-surface px-2 py-1.5 text-body text-ink"
+            className="w-full rounded-control border border-line bg-surface px-3 py-2 text-body text-ink focus:border-brand focus:outline-none"
             rows={2}
             value={message}
             onChange={(e) => setCustomMessage(e.target.value)}
@@ -91,7 +91,7 @@ export function EventForm({ onCreated }: { onCreated: (label: string) => void })
         </label>
 
         <div className="space-y-1">
-          <div className="text-caption text-ink-muted">Preview on the customer app</div>
+          <div className="eyebrow">Preview on the customer app</div>
           <BannerPreview startHour={startHour} endHour={endHour} multiplier={mult} message={message} />
         </div>
 

@@ -4,6 +4,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { BrandMark } from "./BrandMark";
 
 const APPS = [
   { href: "/", label: "Customer app" },
@@ -18,24 +19,31 @@ function isActive(pathname: string, href: string): boolean {
 export function Nav() {
   const pathname = usePathname() ?? "/";
   return (
-    <nav aria-label="Switch app" className="flex h-10 items-center gap-6 border-b border-line bg-surface px-4">
-      <span className="text-h2 text-ink">GridShift</span>
-      <div className="flex items-center gap-1">
-        {APPS.map((app) => {
-          const active = isActive(pathname, app.href);
-          return (
-            <Link
-              key={app.href}
-              href={app.href}
-              aria-current={active ? "page" : undefined}
-              className={`rounded-control px-2 py-1 text-caption font-medium transition-colors duration-fast ${
-                active ? "bg-paper text-ink" : "text-ink-muted hover:text-ink"
-              }`}
-            >
-              {app.label}
-            </Link>
-          );
-        })}
+    <nav aria-label="Switch app" className="sticky top-0 z-30 border-b border-line bg-surface">
+      <div className="flex h-14 items-stretch gap-8 px-6">
+        <Link href="/" className="flex items-center" aria-label="Griddy home">
+          <BrandMark size="sm" />
+        </Link>
+        <div className="flex items-stretch gap-6">
+          {APPS.map((app) => {
+            const active = isActive(pathname, app.href);
+            return (
+              <Link
+                key={app.href}
+                href={app.href}
+                aria-current={active ? "page" : undefined}
+                className={`flex items-center border-b-[3px] pt-[3px] text-body font-semibold transition-colors duration-fast ${
+                  active ? "border-brand text-ink" : "border-transparent text-ink-muted hover:text-ink"
+                }`}
+              >
+                {app.label}
+              </Link>
+            );
+          })}
+        </div>
+        <span className="ml-auto hidden items-center text-caption text-ink-muted md:flex">
+          HackOHI/O 2026 prototype · demo data
+        </span>
       </div>
     </nav>
   );

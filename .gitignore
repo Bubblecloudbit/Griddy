@@ -29,3 +29,9 @@ data/raw/
 
 # typescript
 *.tsbuildinfo
+
+# playwright (browser screenshots, snapshots, console logs from dev checks)
+/.playwright-mcp/
+/test-results/
+/playwright-report/
+/playwright/.cache/

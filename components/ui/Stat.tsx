@@ -1,4 +1,5 @@
 // components/ui/Stat.tsx — one KPI: label, big number, delta, provenance tag (DESIGN.md §3, owner: C)
+// `bare` drops the card chrome so several Stats can sit in one divided band (AEP Overview).
 import type { ReactNode } from "react";
 import { Tag, type TagKind } from "./Tag";
 
@@ -16,17 +17,21 @@ interface Props {
   delta?: ReactNode; // "−18% vs. baseline"
   deltaTone?: DeltaTone;
   tag?: TagKind;
+  bare?: boolean;
   className?: string;
 }
 
-export function Stat({ label, value, delta, deltaTone = "muted", tag, className = "" }: Props) {
+export function Stat({ label, value, delta, deltaTone = "muted", tag, bare = false, className = "" }: Props) {
+  const chrome = bare ? "" : "rounded-card border border-line bg-surface";
   return (
-    <div className={`rounded-card border border-line bg-surface p-4 ${className}`}>
-      <div className="flex items-start justify-between gap-2">
-        <span className="text-caption text-ink-muted">{label}</span>
+    <div className={`flex flex-col p-5 ${chrome} ${className}`}>
+      {/* flex-wrap: on narrow cards the tag drops under the label instead of squeezing it. */}
+      <div className="flex flex-wrap items-start justify-between gap-x-2 gap-y-1.5">
+        <span className="eyebrow">{label}</span>
         {tag && <Tag kind={tag} />}
       </div>
-      <div className="mt-2 font-mono text-display text-ink">{value}</div>
+      {/* mt-auto: values line up across a row even when one label wraps. */}
+      <div className="mt-auto pt-3 font-display text-display text-ink">{value}</div>
       {delta && <div className={`mt-1 text-caption ${TONE[deltaTone]}`}>{delta}</div>}
     </div>
   );
