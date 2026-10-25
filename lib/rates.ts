@@ -16,6 +16,7 @@ export const DEFAULT_RATE: RatePlan = {
   peakHours: [14, 15, 16, 17], // clock hours: 2–6 PM
   illustrative: true,
   weekdaysOnly: true,
+  flatRate: 0.14, // $/kWh, illustrative standard rate (same price all day), for the time-of-use comparison
   source: "AEP Ohio, Time-of-Use program page",
   sourceUrl: "https://www.aepohio.com/account/bills/programs/time-of-use",
 };

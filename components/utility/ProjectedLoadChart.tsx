@@ -1,6 +1,7 @@
 // components/utility/ProjectedLoadChart.tsx — "the proof" (DESIGN.md §6.1, BUILD.md C5, owner: C)
 // Monday only (hours 24–47): dashed gray baseline vs. teal planned area, 2–6 PM peak band,
-// direct line labels, and the callout "Peak-hour load −X% (Y kWh moved)".
+// direct line labels, and the callouts "Peak-hour load −X% (Y kWh moved)" and
+// "Highest hour −Z%" (so a judge can see the peak dropped, not just moved; added by A, approved).
 // Polls /api/forecast every 5 s so the callout moves after Jordan commits.
 "use client";
 
@@ -52,17 +53,37 @@ function peakKWh(f: Forecast) {
   };
 }
 
+// Monday's single highest hour, baseline vs. planned: shows the plan doesn't just move the peak.
+function highestHour(f: Forecast) {
+  const max = (series: number[]) => Math.max(...series.slice(FIRST, LAST + 1));
+  return { baseline: max(f.baselineKW), planned: max(f.plannedKW) };
+}
+
+function pctChange(planned: number, baseline: number) {
+  return baseline > 0 ? ((planned - baseline) / baseline) * 100 : 0;
+}
+
 function Callout({ forecast }: { forecast: Forecast }) {
   const { baseline, planned } = peakKWh(forecast);
-  const pct = baseline > 0 ? ((planned - baseline) / baseline) * 100 : 0;
+  const pct = pctChange(planned, baseline);
   const moved = baseline - planned;
-  const tone = pct <= 0 ? "text-plan" : "text-peak";
+  const top = highestHour(forecast);
+  const topPct = pctChange(top.planned, top.baseline);
+  const tone = (n: number) => (n <= 0 ? "text-plan" : "text-peak");
   return (
     <div className="flex items-center justify-between gap-3">
-      <span>
-        Peak-hour load <span className={`font-mono font-semibold ${tone}`}>{formatPct(pct)}</span>{" "}
-        <span className="text-ink-muted">({formatKWh(Math.abs(moved))} {moved >= 0 ? "moved" : "added"}, 2–6 PM)</span>
-      </span>
+      <div className="space-y-0.5">
+        <div>
+          Peak-hour load <span className={`font-mono font-semibold ${tone(pct)}`}>{formatPct(pct)}</span>{" "}
+          <span className="text-ink-muted">({formatKWh(Math.abs(moved))} {moved >= 0 ? "moved" : "added"}, 2–6 PM)</span>
+        </div>
+        <div>
+          Highest hour <span className={`font-mono font-semibold ${tone(topPct)}`}>{formatPct(topPct)}</span>{" "}
+          <span className="text-ink-muted">
+            ({formatInt(top.baseline)} → {formatInt(top.planned)} kW, any hour of the day)
+          </span>
+        </div>
+      </div>
       <Tag kind="SIMULATED" />
     </div>
   );

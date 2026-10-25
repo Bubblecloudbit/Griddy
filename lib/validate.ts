@@ -1,7 +1,7 @@
 // lib/validate.ts — request body checks for API routes (owner: A)
 // Each parser returns the clean value, or throws BadRequest with a message for the UI.
 import { NextResponse } from "next/server";
-import type { Appliance, FlexTask, LoadFlag, Trip, WeeklyRoutine } from "@/lib/types";
+import type { Appliance, CustomerSetup, FlexTask, LoadFlag, Trip, WeeklyRoutine } from "@/lib/types";
 import { HORIZON_HOURS } from "@/lib/rates";
 
 const APPLIANCES: Appliance[] = ["ev", "dryer", "dishwasher", "water_heater", "other"];
@@ -80,6 +80,13 @@ export function parseRoutine(raw: any): WeeklyRoutine | undefined {
     return { days, start: b.start, end: b.end };
   });
   return { preset: raw.preset, awayBlocks, plugInHour: raw.plugInHour };
+}
+
+export function parseSetup(raw: any): CustomerSetup | undefined {
+  if (raw === undefined) return undefined;
+  if (raw?.rate !== "flat" && raw?.rate !== "tou") throw new BadRequest('setup.rate must be "flat" or "tou"');
+  if (!["smart_meter", "device", "none"].includes(raw.verification)) throw new BadRequest('setup.verification must be "smart_meter", "device", or "none"');
+  return { rate: raw.rate, verification: raw.verification };
 }
 
 export function parseEventIds(raw: unknown): string[] {

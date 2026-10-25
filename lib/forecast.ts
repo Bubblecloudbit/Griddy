@@ -2,6 +2,8 @@
 // baselineKW = what happens without Griddy: every task runs at its earliest start.
 // plannedKW  = committed intent: enrolled homes' tasks at optimized starts, everyone else's
 //              at plug-in, plus away/high-load flags.
+// expectedKW = what AEP should plan on: each home's change weighted by confidence (Phase 4).
+// verifiedOnlyKW = conservative edge: only homes AEP can measure.
 // Only aggregates leave this file; the utility view never sees a single home.
 import type { FlexTask, Forecast, Hour, Household, LoadFlag, Neighborhood } from "@/lib/types";
 import { DEFAULT_RATE, HORIZON_HOURS, isPeak } from "@/lib/rates";
@@ -35,7 +37,7 @@ function addInto(target: number[], source: number[]): void {
   source.forEach((v, h) => (target[h] += v));
 }
 
-function applyFlags(load: number[], flags: LoadFlag[]): number[] {
+export function applyFlags(load: number[], flags: LoadFlag[]): number[] {
   const out = [...load];
   for (const f of flags) {
     for (let h = Math.max(0, f.startHour); h < Math.min(HORIZON_HOURS, f.endHour); h++) {
@@ -49,7 +51,30 @@ export interface AreaPlan {
   homes: Household[];
   baseline: number[]; // 72 h, kW
   planned: number[]; // 72 h, kW
+  expected: number[]; // 72 h, kW: baseline + Σ confidence × (planned − baseline) per home (PHASE4.md §3.3)
+  verifiedOnly: number[]; // 72 h, kW: baseline + only measurable homes' change, weighted by reliability
   startOf: Map<FlexTask, Hour>; // where each task runs in the plan (enrolled: optimized; others: plug-in)
+}
+
+// How much AEP can count on a home's plan. Measurable homes: their track record (reliability).
+// Self-reported homes: a stated assumption, listed on /methodology.
+export const SELF_REPORT_CONFIDENCE = 0.5;
+
+function confidence(home: Household): { c: number; verified: boolean } {
+  const v = home.setup?.verification;
+  if (v === "smart_meter" || v === "device") return { c: home.reliability ?? 0.8, verified: true };
+  return { c: SELF_REPORT_CONFIDENCE, verified: false };
+}
+
+// One home's planned-minus-baseline change, hour by hour.
+function homeDelta(home: Household, startOf: Map<FlexTask, Hour>): number[] {
+  const base = [...home.baselineKW];
+  const plan = applyFlags(home.baselineKW, home.flags);
+  for (const t of home.tasks) {
+    addTaskLoad(base, t, t.earliestStart);
+    addTaskLoad(plan, t, startOf.get(t) ?? t.earliestStart);
+  }
+  return plan.map((v, h) => v - base[h]);
 }
 
 // Runs the area's schedule once. Both the 72 h forecast and the 7-day outlook build on it.
@@ -81,33 +106,51 @@ export function planArea(n: Neighborhood, coordinated: boolean): AreaPlan {
     startOf.set(enrolledTasks[i], t.start); // optimize keeps input order
   });
 
-  return { homes, baseline, planned, startOf };
+  // Confidence-weighted curves: only enrolled homes change anything.
+  const expected = [...baseline];
+  const verifiedOnly = [...baseline];
+  for (const home of homes.filter((h) => h.enrolled)) {
+    const { c, verified } = confidence(home);
+    homeDelta(home, startOf).forEach((d, h) => {
+      expected[h] += c * d;
+      if (verified) verifiedOnly[h] += c * d;
+    });
+  }
+
+  return { homes, baseline, planned, expected, verifiedOnly, startOf };
+}
+
+function toForecast(id: string, a: { baseline: number[]; planned: number[]; expected: number[]; verifiedOnly: number[] }, capacityKW: number, homeCount: number): Forecast {
+  return {
+    ...withPeakTotals({ neighborhoodId: id, baselineKW: round2(a.baseline), plannedKW: round2(a.planned), capacityKW, homeCount }),
+    expectedKW: round2(a.expected),
+    verifiedOnlyKW: round2(a.verifiedOnly),
+    peakKWhExpected: peakKWh(a.expected),
+    maxKWBaseline: planDayMax(a.baseline),
+    maxKWExpected: planDayMax(a.expected),
+  };
+}
+
+// The plan day's single highest hour (for the "Highest hour" callout).
+function planDayMax(curve: number[]): number {
+  return Math.round(Math.max(...curve.slice(PLAN_DAY * 24, PLAN_DAY * 24 + 24)));
 }
 
 export function neighborhoodForecast(n: Neighborhood, coordinated: boolean): Forecast {
-  const { homes, baseline, planned } = planArea(n, coordinated);
-  return withPeakTotals({
-    neighborhoodId: n.id,
-    baselineKW: round2(baseline),
-    plannedKW: round2(planned),
-    capacityKW: n.transformerCapacityKW,
-    homeCount: homes.length,
-  });
+  const area = planArea(n, coordinated);
+  return toForecast(n.id, area, n.transformerCapacityKW, area.homes.length);
 }
 
 export function regionForecast(coordinated: boolean): Forecast {
-  const parts = listNeighborhoods().map((n) => neighborhoodForecast(n, coordinated));
-  const baseline = zeros();
-  const planned = zeros();
-  for (const p of parts) {
-    addInto(baseline, p.baselineKW);
-    addInto(planned, p.plannedKW);
+  const parts = listNeighborhoods().map((n) => ({ n, area: planArea(n, coordinated) }));
+  const sum = { baseline: zeros(), planned: zeros(), expected: zeros(), verifiedOnly: zeros() };
+  for (const { area } of parts) {
+    addInto(sum.baseline, area.baseline);
+    addInto(sum.planned, area.planned);
+    addInto(sum.expected, area.expected);
+    addInto(sum.verifiedOnly, area.verifiedOnly);
   }
-  return withPeakTotals({
-    neighborhoodId: "region",
-    baselineKW: round2(baseline),
-    plannedKW: round2(planned),
-    capacityKW: parts.reduce((sum, p) => sum + p.capacityKW, 0),
-    homeCount: parts.reduce((sum, p) => sum + p.homeCount, 0),
-  });
+  const capacity = parts.reduce((s, p) => s + p.n.transformerCapacityKW, 0);
+  const homes = parts.reduce((s, p) => s + p.area.homes.length, 0);
+  return toForecast("region", sum, capacity, homes);
 }

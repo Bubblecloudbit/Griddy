@@ -5,6 +5,7 @@ import type { Hour } from "@/lib/types";
 export const DEMO_DAY_0 = "2026-10-25"; // Sunday. Hour 0 = midnight at the start of this day.
 export const HORIZON_HOURS = 72; // Sun (0–23), Mon (24–47, "tomorrow" on every chart), Tue (48–71)
 export const PLAN_DAY = 1; // Monday Oct 26: the day every chart shows
+export const DEMO_NOW = 19; // Sun 7 PM: "now" on the demo clock (matches the customer app)
 export const OUTLOOK_DAYS = 7; // Sun Oct 25 – Sat Oct 31
 
 export const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];

@@ -27,19 +27,31 @@ function hourDetail(rate: RatePlan, h: Hour): string {
 }
 
 // One row per planned task that runs on this day, clipped to the day: "EV charging 11p–1a".
-function PlannedBlocks({ schedule, day }: { schedule: ScheduledTask[]; day: number }) {
-  const rows = schedule
-    .map((t) => {
-      const end = t.start + durationHours(t);
-      const from = Math.max(t.start, day * 24);
-      const to = Math.min(end, day * 24 + 24);
-      return { t, end, from, to };
-    })
-    .filter(({ from, to }) => to > from);
-  if (rows.length === 0) return null;
+// Tasks planned on another day get a line underneath with a jump to that day, so a plan
+// that lands Tue 4 AM never makes the Monday view look empty.
+function PlannedBlocks({ schedule, day, onShowDay }: { schedule: ScheduledTask[]; day: number; onShowDay: (d: number) => void }) {
+  const all = schedule.map((t) => {
+    const end = t.start + durationHours(t);
+    const from = Math.max(t.start, day * 24);
+    const to = Math.min(end, day * 24 + 24);
+    return { t, end, from, to };
+  });
+  const rows = all.filter(({ from, to }) => to > from);
+  const elsewhere = all.filter(({ from, to }) => to <= from);
+  if (all.length === 0) return null;
 
   return (
     <div className="mt-2 space-y-1">
+      {elsewhere.map(({ t, end }) => (
+        <button
+          key={t.id}
+          type="button"
+          onClick={() => onShowDay(Math.floor(t.start / 24))}
+          className="block font-mono text-caption text-ink-muted hover:text-ink"
+        >
+          {t.label} · {DAY_NAMES[Math.floor(t.start / 24) % 7]} {shortHour(t.start)}–{shortHour(end)} →
+        </button>
+      ))}
       {rows.map(({ t, end, from, to }) => {
         const startCol = (from % 24) + 1;
         const endCol = startCol + (to - from);
@@ -139,7 +151,14 @@ export function DayRibbon({ rate, schedule = [] }: { rate: RatePlan; schedule?: 
         )}
       </div>
 
-      <PlannedBlocks schedule={schedule} day={day} />
+      <PlannedBlocks
+        schedule={schedule}
+        day={day}
+        onShowDay={(d) => {
+          setDay(d);
+          setActive(null);
+        }}
+      />
 
       <p className="mt-3 min-h-4 text-caption text-ink-muted">
         {active !== null

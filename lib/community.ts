@@ -1,7 +1,7 @@
 // lib/community.ts — seeded synthetic community (owner: A)
 // 12 service areas × 40 homes = 480, all simulated. Same seed → same data. See BUILD.md A3.
 // Flexible tasks sit on Monday Oct 26 (hours 24–47, "tomorrow" on every chart).
-import type { FlexTask, Household, Neighborhood, Trip, WeeklyRoutine } from "@/lib/types";
+import type { CustomerSetup, FlexTask, Household, Neighborhood, Trip, Verification, WeeklyRoutine } from "@/lib/types";
 import { HORIZON_HOURS } from "@/lib/config";
 import { ROUTINE_PRESETS, isAwayAt } from "@/lib/routines";
 
@@ -13,6 +13,14 @@ const TRANSFORMER_CAPACITY_KW = 200; // internal normalizer for the optimizer; n
 const ENROLLED_SHARE = 0.6; // homes already committing Griddy plans
 const TRIP_SHARE = 0.12; // homes with a seeded Thu–Sat trip
 const AWAY_FACTOR = 0.5; // an empty home still draws fridge, HVAC, standby
+
+// Phase 4: how each home can be measured (PHASE4.md §1, §7). One constant each; all simulated.
+export const SMART_METER_SHARE = 0.27; // working figure: ~27% of Ohio homes have a smart meter (PHASE4.md §1); D may replace with AEP Ohio's EIA-861 count
+export const DEVICE_SHARE = 0.12; // assumption: homes with a connected EV charger or thermostat but no smart meter
+export const TOU_SHARE = 0.06; // assumption: homes on time-of-use (needs a smart meter); everyone else is on the flat standard rate
+const RELIABILITY_MIN = 0.6; // verified homes follow 60–98% of their plans (PHASE4.md §3.2)
+const RELIABILITY_MAX = 0.98;
+export const JORDAN_RELIABILITY = 0.95; // the demo home, forced on-plan at settlement
 
 // 12 synthetic service areas × 40 homes = 480. Shown in the UI as "service areas".
 const AREA_NAMES = [
@@ -36,8 +44,15 @@ const LAST_HOUR = HORIZON_HOURS; // deadlines are exclusive, so 72 = end of Tues
 
 const SEEDED_TRIP: Omit<Trip, "id"> = { label: "Trip", startDate: "2026-10-29", endDate: "2026-10-31" }; // Thu–Sat
 
-// mulberry32: tiny seeded PRNG returning floats in [0, 1).
-function mulberry32(seed: number): () => number {
+// FNV-1a: a stable 32-bit number from a string (per-home random streams, pseudonymous ids).
+export function hashString(text: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < text.length; i++) h = Math.imul(h ^ text.charCodeAt(i), 16777619);
+  return h >>> 0;
+}
+
+// mulberry32: tiny seeded PRNG returning floats in [0, 1). Also used by lib/settlement.ts.
+export function mulberry32(seed: number): () => number {
   let a = seed >>> 0;
   return () => {
     a = (a + 0x6d2b79f5) >>> 0;
@@ -99,11 +114,25 @@ function makeTasks(rng: Rng, homeId: string, routine: WeeklyRoutine, evAdoption:
   return tasks;
 }
 
+// Rate + verification for one home, from its own random stream so the rest of the
+// community (routines, tasks, baselines) stays exactly as it was before Phase 4.
+function pickSetup(rng: Rng): { setup: CustomerSetup; reliability?: number } {
+  const r = rng();
+  const verification: Verification = r < SMART_METER_SHARE ? "smart_meter" : r < SMART_METER_SHARE + DEVICE_SHARE ? "device" : "none";
+  const tou = verification === "smart_meter" && rng() < TOU_SHARE / SMART_METER_SHARE;
+  const reliability = RELIABILITY_MIN + rng() * (RELIABILITY_MAX - RELIABILITY_MIN);
+  return {
+    setup: { rate: tou ? "tou" : "flat", verification },
+    reliability: verification === "none" ? undefined : Math.round(reliability * 100) / 100,
+  };
+}
+
 export function generateCommunity(
   seed: number = DEFAULT_SEED,
   evAdoption: number = DEFAULT_EV_ADOPTION,
 ): { households: Household[]; neighborhoods: Neighborhood[] } {
   const rng = mulberry32(seed);
+  const setupRng = mulberry32(seed + 1000); // Phase 4 stream; never touches `rng`
   const households: Household[] = [];
   const neighborhoods: Neighborhood[] = [];
 
@@ -121,12 +150,13 @@ export function generateCommunity(
       const enrolled = rng() < ENROLLED_SHARE;
       const trips: Trip[] = rng() < TRIP_SHARE ? [{ id: `${id}-trip`, ...SEEDED_TRIP }] : [];
       const points = randInt(rng, 0, 300);
+      const { setup, reliability } = pickSetup(setupRng);
       homeIds.push(id);
       households.push(
         isDemoHome
-          ? // Jordan starts with an empty plan and isn't enrolled; the demo does both live.
-            { id, neighborhoodId: n.id, baselineKW, tasks: [], flags: [], points: 150, enrolled: false, trips: [], routine, eventIds: [] }
-          : { id, neighborhoodId: n.id, baselineKW, tasks, flags: [], points: enrolled ? points : 0, enrolled, trips, routine, eventIds: [] },
+          ? // Jordan starts with an empty plan, isn't enrolled, and has no setup until the customer picks one.
+            { id, neighborhoodId: n.id, baselineKW, tasks: [], flags: [], points: 150, enrolled: false, trips: [], routine, eventIds: [], reliability: JORDAN_RELIABILITY }
+          : { id, neighborhoodId: n.id, baselineKW, tasks, flags: [], points: enrolled ? points : 0, enrolled, trips, routine, eventIds: [], setup, reliability },
       );
     }
     neighborhoods.push({ id: n.id, name: n.name, transformerCapacityKW: TRANSFORMER_CAPACITY_KW, homeIds });

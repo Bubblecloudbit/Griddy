@@ -16,6 +16,9 @@ import type {
   Summary,
   Trip,
   WeeklyRoutine,
+  MyStatus,
+  SettlementSummary,
+  IntakeStats,
 } from "@/lib/types";
 import { HORIZON_HOURS, OUTLOOK_DAYS, dayLabel, hourLabel } from "@/lib/config";
 import { NEIGHBORHOODS } from "@/lib/community";
@@ -271,3 +274,35 @@ export const MOCK_HOUSEHOLD: Household = {
   routine: MOCK_ROUTINE,
   eventIds: [],
 };
+
+// ---------------------------------------------------------------------------
+// Phase 4 (PHASE4.md §7): verification, points, settlement, data feed. All simulated.
+// ---------------------------------------------------------------------------
+export const MOCK_MY_STATUS: MyStatus = {
+  points: 155,
+  setup: { rate: "flat", verification: "smart_meter" },
+  reliability: 0.95,
+  pending: [
+    { rule: "verified_shift", label: "Verified shift", points: 115, detail: "11.5 kWh planned out of 2–6 PM × 10", status: "pending" },
+    { rule: "event", label: "Flex Event", points: 115, detail: "11.5 kWh out of Mon 4–6 PM × 5 × 2", status: "pending" },
+  ],
+  history: [{ rule: "commit", label: "Commit", points: 5, detail: "Plan committed", status: "settled" }],
+  touComparison: { flatMonthly: 50.4, touMonthly: 39.6 },
+};
+
+export const MOCK_SETTLEMENT_SUMMARY: SettlementSummary = {
+  day: 1,
+  settled: true,
+  homesSettled: 116,
+  byTier: {
+    smart_meter: { homes: 80, plannedKWh: 310, deliveredKWh: 262 },
+    device: { homes: 36, plannedKWh: 140, deliveredKWh: 121 },
+    none: { homes: 182, plannedKWh: 690, deliveredKWh: 0 },
+  },
+  deliveredPct: 85,
+  eventReducedKWh: 9,
+  pointsIssued: 4820,
+  reliabilityByArea: NEIGHBORHOODS.map((n, i) => ({ areaId: n.id, name: n.name, homes: 9 + (i % 4), avgReliability: 0.78 + (i % 5) * 0.03 })),
+};
+
+export const MOCK_INTAKE: IntakeStats = { plansReceived: 298, verifiedSharePct: 39, lastReceivedHour: 18, meterReads: 0 };

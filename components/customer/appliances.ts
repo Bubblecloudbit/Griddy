@@ -17,7 +17,7 @@ interface Preset {
 
 const PRESETS: Record<Appliance, Preset> = {
   ev: { label: "EV charging", kWh: 10, powerKW: 7.2, readyBy: 24 + 7, startOffset: 0, startLabel: "Plugged in", endLabel: "Ready by" }, // ready Tue 7 AM
-  dryer: { label: "Dryer", kWh: 1.5, powerKW: 3, readyBy: 24, startOffset: 0, startLabel: "Loaded at", endLabel: "Done by" }, // done by midnight
+  dryer: { label: "Dryer", kWh: 1.5, powerKW: 3, readyBy: 22, startOffset: 0, startLabel: "Loaded at", endLabel: "Done by" }, // done by 10 PM (quiet hours, lib/quiet.ts)
   dishwasher: { label: "Dishwasher", kWh: 1.2, powerKW: 1.5, readyBy: 24 + 7, startOffset: 3, startLabel: "Loaded at", endLabel: "Clean by" }, // after dinner, clean by breakfast
   water_heater: { label: "Water heater", kWh: 2, powerKW: 4.5, readyBy: 24 + 6, startOffset: -2, startLabel: "Can start", endLabel: "Hot water by" }, // hot for Tue 6 AM showers
   other: { label: "Other", kWh: 1, powerKW: 1, readyBy: 24, startOffset: 0, startLabel: "Can start", endLabel: "Done by" },

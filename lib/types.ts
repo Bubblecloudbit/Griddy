@@ -1,4 +1,5 @@
 // lib/types.ts — Griddy type contract (v2, PLAN.md §7)
+// lib/types.ts — GridShift type contract (v2, PLAN.md §7; Phase 4 additions marked "Phase 4")
 // Change only with full-team agreement. Other teammates' code depends on every name here.
 // v2 changes are all additive and marked `// v2`; nothing from v1 was renamed or removed.
 
@@ -14,6 +15,15 @@ export interface RatePlan {
   weekdaysOnly?: boolean; // v2: true → no peak on Sat/Sun
   source?: string; // v2
   sourceUrl?: string; // v2
+  flatRate?: number; // Phase 4: $/kWh, illustrative standard (same-price-all-day) rate for the TOU comparison
+}
+
+// Phase 4: who can be measured, and how (PHASE4.md §3).
+export type RateType = "flat" | "tou";
+export type Verification = "smart_meter" | "device" | "none";
+export interface CustomerSetup {
+  rate: RateType;
+  verification: Verification;
 }
 
 export type Appliance = "ev" | "dryer" | "dishwasher" | "water_heater" | "other"; // v2
@@ -74,6 +84,8 @@ export interface Household {
   trips?: Trip[]; // v2
   routine?: WeeklyRoutine; // v2
   eventIds?: string[]; // v2: Flex Events this home joined
+  setup?: CustomerSetup; // Phase 4: rate + how usage is measured (none = self-reported)
+  reliability?: number; // Phase 4: 0..1, share of plans actually followed (verified homes)
 }
 
 export interface Neighborhood {
@@ -91,6 +103,11 @@ export interface Forecast {
   homeCount: number; // must be >= 5 to display in utility view
   peakKWhBaseline?: number; // v2: kWh in the Mon 2–6 PM peak window, baseline
   peakKWhPlanned?: number; // v2: same window, planned
+  expectedKW?: number[]; // Phase 4: baseline + confidence-weighted change (the forecast to plan on)
+  verifiedOnlyKW?: number[]; // Phase 4: baseline + verified homes' change only (conservative edge)
+  peakKWhExpected?: number; // Phase 4: Mon 2–6 PM kWh, expected
+  maxKWBaseline?: number; // Phase 4: plan day's highest hour, baseline
+  maxKWExpected?: number; // Phase 4: plan day's highest hour, expected
 }
 
 export interface Heatmap { // v2
@@ -110,6 +127,60 @@ export interface Summary { // v2
   peakKWhShifted: number;
   homesAwayThisWeek: number;
   nextEvent: FlexEvent | null;
+  verifiedHomes?: number; // Phase 4: enrolled homes AEP can measure (smart meter or device)
+  verifiedSharePct?: number; // Phase 4: verifiedHomes / enrolled homes, %
+  peakReductionExpectedPct?: number; // Phase 4: Mon 2–6 PM, expected vs. baseline
+}
+
+// Phase 4: points (PHASE4.md §4) and settlement (§3.2).
+export type PointsRule = "commit" | "contribution" | "verified_shift" | "event" | "accuracy_bonus";
+export interface PointsLine {
+  rule: PointsRule;
+  label: string;
+  points: number;
+  detail: string;
+  status: "pending" | "settled";
+}
+
+export interface Settlement {
+  householdId: string;
+  day: number;
+  verification: Verification;
+  plannedShiftKWh: number;
+  deliveredShiftKWh: number;
+  adherence: number;
+  event?: { eventId: string; baselineKWh: number; actualKWh: number; reducedKWh: number };
+  points: PointsLine[];
+}
+export interface TierResult {
+  homes: number;
+  plannedKWh: number;
+  deliveredKWh: number;
+}
+export interface SettlementSummary {
+  day: number;
+  settled: boolean;
+  homesSettled: number;
+  byTier: Record<Verification, TierResult>; // "none": homes and kWh planned; delivered = 0 (not measurable)
+  deliveredPct: number;
+  eventReducedKWh: number;
+  pointsIssued: number;
+  reliabilityByArea: { areaId: string; name: string; homes: number; avgReliability: number }[]; // ≥5 homes only
+}
+export interface MyStatus { // the customer's own data only
+  points: number;
+  setup?: CustomerSetup;
+  reliability?: number;
+  pending: PointsLine[];
+  history: PointsLine[];
+  settlement?: Settlement;
+  touComparison?: { flatMonthly: number; touMonthly: number }; // illustrative, from this home's plan × 30
+}
+export interface IntakeStats {
+  plansReceived: number;
+  verifiedSharePct: number;
+  lastReceivedHour: number | null;
+  meterReads: number;
 }
 
 export interface FlexEvent {
