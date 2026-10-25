@@ -1,6 +1,6 @@
 // components/utility/api.ts — the only place the AEP view talks to the backend (owner: C)
 // Routes are owned by A (real engine since v1 integration).
-import type { Forecast, Heatmap, Summary } from "@/lib/types";
+import type { Forecast, Heatmap, IntakeStats, SettlementSummary, Summary } from "@/lib/types";
 
 export type Scope = string; // a neighborhood id ("n1") or "region"
 
@@ -36,6 +36,27 @@ export async function fetchSummary(): Promise<Summary> {
 // Heat maps (BUILD.md C7–C8). Null cells = hidden for privacy (< 5 homes).
 export async function fetchHeatmap(view: Heatmap["view"], metric: Heatmap["metric"]): Promise<Heatmap> {
   const res = await fetch(`/api/heatmap?view=${view}&metric=${metric}`, { cache: "no-store" });
+  if (!res.ok) throw new ApiError(res.status, await errorMessage(res));
+  return res.json();
+}
+
+// Phase 4: settlement results (settled: false until the demo button is pressed).
+export async function fetchSettlement(): Promise<SettlementSummary> {
+  const res = await fetch("/api/settlement", { cache: "no-store" });
+  if (!res.ok) throw new ApiError(res.status, await errorMessage(res));
+  return res.json();
+}
+
+// Phase 4: "Simulate Monday's meter reads" (demo). Idempotent.
+export async function settlePlanDay(): Promise<SettlementSummary> {
+  const res = await fetch("/api/settle", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ day: 1 }) });
+  if (!res.ok) throw new ApiError(res.status, await errorMessage(res));
+  return res.json();
+}
+
+// Phase 4: data feed counters.
+export async function fetchIntake(): Promise<IntakeStats> {
+  const res = await fetch("/api/intake", { cache: "no-store" });
   if (!res.ok) throw new ApiError(res.status, await errorMessage(res));
   return res.json();
 }

@@ -3,7 +3,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Grid3x3, LayoutDashboard, ShieldCheck, Zap, type LucideIcon } from "lucide-react";
+import { Database, Grid3x3, LayoutDashboard, ShieldCheck, Zap, type LucideIcon } from "lucide-react";
 
 interface Item {
   href: string;
@@ -16,6 +16,8 @@ const ITEMS: Item[] = [
   { href: "/utility", label: "Overview", icon: LayoutDashboard, exact: true },
   { href: "/utility/heatmaps", label: "Heat maps", icon: Grid3x3 },
   { href: "/utility/events", label: "Flex events", icon: Zap }, // page built by A (BUILD.md A10)
+  { href: "/utility/verification", label: "Verification", icon: ShieldCheck }, // Phase 4
+  { href: "/utility/data-feed", label: "Data feed", icon: Database }, // Phase 4
   // Methodology lives in the top app switcher (Nav), which both apps share, so it isn't repeated here.
 ];
 

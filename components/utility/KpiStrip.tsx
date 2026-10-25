@@ -4,7 +4,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { AnimatedNumber, Stat, formatInt, formatKWh, formatPct } from "@/components/ui";
+import { AnimatedNumber, Stat, formatInt, formatPct } from "@/components/ui";
 import { fetchSummary } from "./api";
 import { usePolling } from "./usePolling";
 
@@ -39,7 +39,8 @@ export function KpiStrip() {
     return error ? <p className="text-body text-danger">{error.message}</p> : <Skeleton />;
   }
 
-  const lessPeak = data.peakReductionPct < 0;
+  // Phase 4: the headline peak number is the confidence-weighted "expected" forecast.
+  const expectedPct = data.peakReductionExpectedPct ?? data.peakReductionPct;
   return (
     <Band>
       <Stat
@@ -51,19 +52,19 @@ export function KpiStrip() {
       />
       <Stat
         bare
-        label="Flexible load"
-        value={<AnimatedNumber value={data.committedFlexKWh} format={formatKWh} />}
-        delta="committed in plans"
+        label="Verified homes"
+        value={<AnimatedNumber value={data.verifiedHomes ?? 0} format={formatInt} />}
+        delta={<><AnimatedNumber value={data.verifiedSharePct ?? 0} format={(n) => `${Math.round(n)}%`} /> of enrolled · smart meter or device</>}
         tag="SIMULATED"
       />
       <Stat
         bare
-        label="Peak-hour load"
-        value={<AnimatedNumber value={data.peakReductionPct} format={formatPct} />}
-        delta={<>vs. baseline · <AnimatedNumber value={data.peakKWhShifted} format={formatKWh} /> moved</>}
-        deltaTone={lessPeak ? "plan" : "peak"}
+        label="Peak-hour load (expected)"
+        value={<AnimatedNumber value={expectedPct} format={formatPct} />}
+        delta={<>vs. baseline · <AnimatedNumber value={data.peakReductionPct} format={formatPct} /> if every plan is followed</>}
+        deltaTone={expectedPct < 0 ? "plan" : "peak"}
         tag="SIMULATED"
-        className={lessPeak ? "!bg-brand-wash" : ""}
+        className={expectedPct < 0 ? "!bg-brand-wash" : ""}
       />
       <Stat
         bare
