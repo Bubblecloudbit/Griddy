@@ -1,4 +1,4 @@
-// app/utility/verification/page.tsx — Verification (owner: C, PHASE4.md §6 AEP 3)
+// app/utility/verification/page.tsx — Verification (owner: C, PLAN.md §7a AEP 3)
 // "Simulate Monday's meter reads" (a labeled demo) → committed vs. delivered by tier, Flex Event
 // reduction, points issued, reliability by area. Aggregates only (≥5 homes per area row).
 "use client";

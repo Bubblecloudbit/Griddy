@@ -1,5 +1,5 @@
 // components/customer/WeekTab.tsx — setup, weekly routine, mini week strip, trips (owner: B)
-// DESIGN.md §5.3 + PHASE4.md §6. Setup, routine, and trips are sent with the next plan commit.
+// DESIGN.md §5.3 + PLAN.md §7a Setup, routine, and trips are sent with the next plan commit.
 "use client";
 
 import { useState } from "react";

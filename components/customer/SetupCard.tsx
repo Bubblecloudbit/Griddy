@@ -1,4 +1,4 @@
-// components/customer/SetupCard.tsx — "Your setup": rate + how usage is measured (owner: B, PHASE4.md §6)
+// components/customer/SetupCard.tsx — "Your setup": rate + how usage is measured (owner: B, PLAN.md §7a)
 // "Not sure" counts as the standard rate / not measurable. Saved with the next plan commit.
 "use client";
 

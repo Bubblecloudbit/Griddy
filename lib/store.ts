@@ -18,7 +18,7 @@ interface StoreState {
   meterReads: MeterRead[]; // Phase 4 data feed; written by settlement
 }
 
-// Data feed tables (PHASE4.md §5). Pseudonymous: no names, no addresses. AEP never reads
+// Data feed tables (PLAN.md §7a). Pseudonymous: no names, no addresses. AEP never reads
 // these directly; it only sees aggregates of 5+ homes.
 export interface PlanSubmission {
   pseudonymId: string;

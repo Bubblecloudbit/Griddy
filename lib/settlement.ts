@@ -1,4 +1,4 @@
-// lib/settlement.ts — "Simulate Monday's meter reads" (owner: A). PHASE4.md §3.2, step by step.
+// lib/settlement.ts — "Simulate Monday's meter reads" (owner: A). PLAN.md §7a, step by step.
 // Settles the plan day for every enrolled home that AEP can measure. All reads are SIMULATED,
 // seeded per home id, so every demo run gives identical numbers. Self-reported homes aren't settled.
 import type { FlexEvent, FlexTask, Hour, Household, PointsLine, Settlement, SettlementSummary, TierResult, Verification } from "@/lib/types";

@@ -1,4 +1,4 @@
-// POST /api/settle (owner: A) — "Simulate Monday's meter reads" (demo). PHASE4.md §3.2.
+// POST /api/settle (owner: A) — "Simulate Monday's meter reads" (demo). PLAN.md §7a
 // Request: { day: 1 } (only the plan day)  →  SettlementSummary. Idempotent; /api/reset clears it.
 import { NextResponse } from "next/server";
 import { PLAN_DAY } from "@/lib/config";

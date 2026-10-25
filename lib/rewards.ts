@@ -1,4 +1,4 @@
-// lib/rewards.ts — turn a commit into points lines (owner: A). PHASE4.md §4.
+// lib/rewards.ts — turn a commit into points lines (owner: A). PLAN.md §7a
 // Uses the area's actual schedule, so "planned out of peak" matches what the forecast shows.
 import type { FlexEvent, FlexTask, Hour, Household, MyStatus, PointsLine } from "@/lib/types";
 import { DEFAULT_RATE } from "@/lib/rates";

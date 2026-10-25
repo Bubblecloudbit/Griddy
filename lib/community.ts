@@ -14,11 +14,11 @@ const ENROLLED_SHARE = 0.6; // homes already committing Griddy plans
 const TRIP_SHARE = 0.12; // homes with a seeded Thu–Sat trip
 const AWAY_FACTOR = 0.5; // an empty home still draws fridge, HVAC, standby
 
-// Phase 4: how each home can be measured (PHASE4.md §1, §7). One constant each; all simulated.
-export const SMART_METER_SHARE = 0.27; // working figure: ~27% of Ohio homes have a smart meter (PHASE4.md §1); D may replace with AEP Ohio's EIA-861 count
+// Phase 4: how each home can be measured (PLAN.md §7a). One constant each; all simulated.
+export const SMART_METER_SHARE = 0.27; // working figure: ~27% of Ohio homes have a smart meter (PLAN.md §7a); D may replace with AEP Ohio's EIA-861 count
 export const DEVICE_SHARE = 0.12; // assumption: homes with a connected EV charger or thermostat but no smart meter
 export const TOU_SHARE = 0.06; // assumption: homes on time-of-use (needs a smart meter); everyone else is on the flat standard rate
-const RELIABILITY_MIN = 0.6; // verified homes follow 60–98% of their plans (PHASE4.md §3.2)
+const RELIABILITY_MIN = 0.6; // verified homes follow 60–98% of their plans (PLAN.md §7a)
 const RELIABILITY_MAX = 0.98;
 export const JORDAN_RELIABILITY = 0.95; // the demo home, forced on-plan at settlement
 

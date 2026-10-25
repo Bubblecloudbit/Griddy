@@ -51,7 +51,7 @@ export interface AreaPlan {
   homes: Household[];
   baseline: number[]; // 72 h, kW
   planned: number[]; // 72 h, kW
-  expected: number[]; // 72 h, kW: baseline + Σ confidence × (planned − baseline) per home (PHASE4.md §3.3)
+  expected: number[]; // 72 h, kW: baseline + Σ confidence × (planned − baseline) per home (PLAN.md §7a)
   verifiedOnly: number[]; // 72 h, kW: baseline + only measurable homes' change, weighted by reliability
   startOf: Map<FlexTask, Hour>; // where each task runs in the plan (enrolled: optimized; others: plug-in)
 }

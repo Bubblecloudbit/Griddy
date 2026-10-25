@@ -1,5 +1,5 @@
 // components/customer/RewardsTab.tsx — GridPoints by rule, pending vs. settled, reliability (owner: B)
-// DESIGN.md §5.4 + PHASE4.md §6. No prize catalog, no dollar conversion.
+// DESIGN.md §5.4 + PLAN.md §7a No prize catalog, no dollar conversion.
 import { Award } from "lucide-react";
 import type { MyStatus, PointsLine } from "@/lib/types";
 import { Card, EmptyState, Tag } from "@/components/ui";

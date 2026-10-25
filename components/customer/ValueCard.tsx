@@ -1,4 +1,4 @@
-// components/customer/ValueCard.tsx — what Jordan's plan is worth, by setup (owner: B, PHASE4.md §6)
+// components/customer/ValueCard.tsx — what Jordan's plan is worth, by setup (owner: B, PLAN.md §7a)
 // Time-of-use: dollar savings + points. Flat + measurable: pending points + an illustrative
 // time-of-use comparison. Flat + not measurable: forecast help + contribution points + how to get verified.
 import type { CustomerSetup, MyStatus, ScheduledTask } from "@/lib/types";

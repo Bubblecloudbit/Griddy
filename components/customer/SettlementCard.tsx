@@ -1,4 +1,4 @@
-// components/customer/SettlementCard.tsx — Jordan's measured result (owner: B, PHASE4.md §6)
+// components/customer/SettlementCard.tsx — Jordan's measured result (owner: B, PLAN.md §7a)
 // Shown once AEP has run "Simulate Monday's meter reads". Everything here is simulated.
 import type { Settlement } from "@/lib/types";
 import { Card, InfoTip, Tag } from "@/components/ui";

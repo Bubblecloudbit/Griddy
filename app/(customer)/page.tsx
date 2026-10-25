@@ -1,4 +1,4 @@
-// app/(customer)/page.tsx — customer app (owner: B). DESIGN.md §5 + PHASE4.md §6.
+// app/(customer)/page.tsx — customer app (owner: B). DESIGN.md §5 + PLAN.md §7a
 // Tabs: Today (ribbon, value card, settlement) · Plan (appliance cards) · Week (setup, routine, trips) · Rewards.
 "use client";
 

@@ -219,7 +219,7 @@ function buildReply(tasks: FlexTask[], trips: Trip[], flags: LoadFlag[], problem
 }
 
 // ---------------------------------------------------------------------------
-// Setup (PHASE4.md §6): "I'm on the standard rate", "I have a smart meter", "my charger is connected"
+// Setup (PLAN.md §7a): "I'm on the standard rate", "I have a smart meter", "my charger is connected"
 // ---------------------------------------------------------------------------
 const SETUP_RULES: { pattern: RegExp; setup: Partial<CustomerSetup> }[] = [
   { pattern: /\b(no|don'?t have a|without a) smart meter\b/, setup: { verification: "none" } },

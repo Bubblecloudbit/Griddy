@@ -1,6 +1,6 @@
 // components/utility/ProjectedLoadChart.tsx — "the proof" (DESIGN.md §6.1, BUILD.md C5, owner: C)
 // Monday only (hours 24–47): dashed gray baseline vs. teal expected line, a light range band
-// (verified homes only ↔ every plan followed, PHASE4.md §3.3), 2–6 PM peak band, direct line
+// (verified homes only ↔ every plan followed, PLAN.md §7a), 2–6 PM peak band, direct line
 // labels, and the callouts "Peak-hour load (expected) −X%" and "Highest hour −Z%".
 // Polls /api/forecast every 5 s so the callout moves after Jordan commits.
 "use client";

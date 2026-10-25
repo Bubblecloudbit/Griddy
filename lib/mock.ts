@@ -276,7 +276,7 @@ export const MOCK_HOUSEHOLD: Household = {
 };
 
 // ---------------------------------------------------------------------------
-// Phase 4 (PHASE4.md §7): verification, points, settlement, data feed. All simulated.
+// Phase 4 (PLAN.md §7a): verification, points, settlement, data feed. All simulated.
 // ---------------------------------------------------------------------------
 export const MOCK_MY_STATUS: MyStatus = {
   points: 155,

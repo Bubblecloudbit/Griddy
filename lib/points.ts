@@ -1,4 +1,4 @@
-// lib/points.ts — the GridPoints rules (owner: A). PHASE4.md §4; explainable on one slide.
+// lib/points.ts — the GridPoints rules (owner: A). PLAN.md §7a; explainable on one slide.
 // Pure functions: numbers in, PointsLine out. Every constant is listed on /methodology.
 // Rewards only, never penalties. Points are never converted to dollars in the UI.
 import type { PointsLine, Verification } from "@/lib/types";

@@ -1,4 +1,4 @@
-// lib/exchange.ts — the GridShift ↔ AEP data feed, simulated in memory (owner: A). PHASE4.md §5.
+// lib/exchange.ts — the GridShift ↔ AEP data feed, simulated in memory (owner: A). PLAN.md §7a
 //
 //   Customer app ─plan─▶ API ─▶ plan_submissions (pseudonymous id, area, tier, 24 h planned kWh)
 //                          ├─ aggregate (≥5 homes) ─▶ AEP forecast feed + "Download forecast CSV"

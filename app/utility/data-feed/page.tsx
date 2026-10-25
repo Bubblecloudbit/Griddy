@@ -1,4 +1,4 @@
-// app/utility/data-feed/page.tsx — Data feed (owner: C, PHASE4.md §5, §6 AEP 4)
+// app/utility/data-feed/page.tsx — Data feed (owner: C, PLAN.md §7a AEP 4)
 // What flows between GridShift and AEP: the pipeline, live intake counters, one sample
 // aggregated row, and the forecast CSV. AEP only ever sees aggregates of 5+ homes.
 "use client";

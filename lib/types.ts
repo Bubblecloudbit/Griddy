@@ -18,7 +18,7 @@ export interface RatePlan {
   flatRate?: number; // Phase 4: $/kWh, illustrative standard (same-price-all-day) rate for the TOU comparison
 }
 
-// Phase 4: who can be measured, and how (PHASE4.md §3).
+// Phase 4: who can be measured, and how (PLAN.md §7a).
 export type RateType = "flat" | "tou";
 export type Verification = "smart_meter" | "device" | "none";
 export interface CustomerSetup {
@@ -132,7 +132,7 @@ export interface Summary { // v2
   peakReductionExpectedPct?: number; // Phase 4: Mon 2–6 PM, expected vs. baseline
 }
 
-// Phase 4: points (PHASE4.md §4) and settlement (§3.2).
+// Phase 4: points (PLAN.md §7a) and settlement (§3.2).
 export type PointsRule = "commit" | "contribution" | "verified_shift" | "event" | "accuracy_bonus";
 export interface PointsLine {
   rule: PointsRule;
