@@ -5,7 +5,7 @@
 // Clock (PLAN.md §6): hour 0 = midnight Sun Oct 25, horizon 72 h (Sun–Tue). Tasks are planned
 // for Monday (PLAN_DAY), so "charge my car by 7 AM" = plug in Mon 4 PM (h40), ready Tue 7 AM (h55).
 // Trips are dates inside the 7-day outlook (Oct 25–31), not flags.
-import type { Appliance as ApplianceId, FlexTask, Hour, LoadFlag, Trip } from "@/lib/types";
+import type { Appliance as ApplianceId, CustomerSetup, FlexTask, Hour, LoadFlag, Trip } from "@/lib/types";
 import { DAY_NAMES, DEMO_DAY_0, HORIZON_HOURS, OUTLOOK_DAYS, PLAN_DAY, dayLabel, weekdayOf } from "@/lib/config";
 import { ROUTINE_PRESETS } from "@/lib/routines";
 import tou from "@/data/real/aep_tou.json";
@@ -219,6 +219,37 @@ function buildReply(tasks: FlexTask[], trips: Trip[], flags: LoadFlag[], problem
 }
 
 // ---------------------------------------------------------------------------
+// Setup (PHASE4.md §6): "I'm on the standard rate", "I have a smart meter", "my charger is connected"
+// ---------------------------------------------------------------------------
+const SETUP_RULES: { pattern: RegExp; setup: Partial<CustomerSetup> }[] = [
+  { pattern: /\b(no|don'?t have a|without a) smart meter\b/, setup: { verification: "none" } },
+  { pattern: /\bsmart meter\b|\bami meter\b/, setup: { verification: "smart_meter" } },
+  { pattern: /\b(smart|connected) (charger|thermostat)\b|\b(charger|thermostat) is connected\b|\bpower rewards\b/, setup: { verification: "device" } },
+  { pattern: /\btime[- ]of[- ]use\b|\btou\b/, setup: { rate: "tou" } },
+  { pattern: /\b(standard|flat|regular) rate\b|\bsame price\b/, setup: { rate: "flat" } },
+];
+
+// First matching rule per field wins ("no smart meter" is checked before "smart meter").
+function parseSetup(clauses: string[]): Partial<CustomerSetup> | undefined {
+  const setup: Partial<CustomerSetup> = {};
+  for (const clause of clauses) {
+    for (const rule of SETUP_RULES) {
+      if (!rule.pattern.test(clause)) continue;
+      if (rule.setup.rate && !setup.rate) setup.rate = rule.setup.rate;
+      if (rule.setup.verification && !setup.verification) setup.verification = rule.setup.verification;
+      break;
+    }
+  }
+  return setup.rate || setup.verification ? setup : undefined;
+}
+
+function describeSetup(s: Partial<CustomerSetup>): string {
+  const rate = s.rate === "tou" ? "time-of-use rate" : s.rate === "flat" ? "standard rate (same price all day)" : null;
+  const measure = s.verification === "smart_meter" ? "smart meter" : s.verification === "device" ? "connected charger or thermostat" : s.verification === "none" ? "no smart meter or device" : null;
+  return `• Your setup: ${[rate, measure].filter(Boolean).join(", ")}.`;
+}
+
+// ---------------------------------------------------------------------------
 // Entry point
 // ---------------------------------------------------------------------------
 function splitClauses(message: string): string[] {
@@ -262,10 +293,13 @@ export function ruleBasedCoach(message: string): CoachResult {
     if (flag) flags.push(flag);
   }
 
+  const setup = parseSetup(clauses);
+  const reply = buildReply(tasks, trips, flags, problems);
   return {
-    reply: buildReply(tasks, trips, flags, problems),
+    reply: setup ? (reply === HELP_REPLY ? `Got it:\n${describeSetup(setup)}` : `${reply}\n${describeSetup(setup)}`) : reply,
     tasks: tasks.length > 0 ? tasks : undefined,
     trips: trips.length > 0 ? trips : undefined,
     flags: flags.length > 0 ? flags : undefined,
+    setup,
   };
 }
